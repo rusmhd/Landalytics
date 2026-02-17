@@ -76,13 +76,16 @@ export default function App() {
   const [status, setStatus] = useState("System Idle");
 
 const runAudit = async () => {
-    if (!url) return;
-    const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    console.log("🚀 Attempting to contact API at:", API_BASE);
-    setLoading(true);
-    setScores(null);
-    setAi(null);
-    setStatus("Initiating Neural Capture...");
+  if (!url) return;
+
+  // 1. Correctly format the URL (removes trailing slash from Render env var)
+  const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "http://localhost:8000";
+  console.log("🚀 Attempting to contact API at:", `${API_BASE}/api/v1/analyze`);
+
+  setLoading(true);
+  setScores(null);
+  setAi(null);
+  setStatus("Initiating Neural Capture...");
 
     try {
       const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -267,4 +270,5 @@ const runAudit = async () => {
   );
 
 }
+
 
