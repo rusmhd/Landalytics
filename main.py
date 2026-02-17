@@ -130,8 +130,19 @@ async def analyze_site(request: AuditRequest):
         except Exception as e:
             yield json.dumps({"type": "error", "msg": str(e)}) + "\n"
 
-    return StreamingResponse(stream_analysis(), media_type="application/x-ndjson")
+    return StreamingResponse(
+        stream_analysis(), 
+        media_type="application/x-ndjson",
+        headers={
+            "X-Accel-Buffering": "no",  # Disables buffering on Nginx/Proxies
+            "Cache-Control": "no-cache", # Ensures fresh data
+            "Connection": "keep-alive",  # Keeps the stream open
+            "Content-Encoding": "none"   # Prevents compression from breaking the stream
+        }
+    )
+        
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
