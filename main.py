@@ -20,6 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "Landalytics API is running"}
 class AuditRequest(BaseModel):
     url: str
 
@@ -124,3 +127,4 @@ if __name__ == "__main__":
     # Important: Render provides the PORT variable automatically
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
