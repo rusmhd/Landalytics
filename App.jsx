@@ -77,6 +77,8 @@ export default function App() {
 
 const runAudit = async () => {
     if (!url) return;
+    const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    console.log("🚀 Attempting to contact API at:", API_BASE);
     setLoading(true);
     setScores(null);
     setAi(null);
@@ -265,3 +267,4 @@ const runAudit = async () => {
   );
 
 }
+
