@@ -21,7 +21,7 @@ class AuditRequest(BaseModel):
     url: str
 
 # Groq Client setup
-client = Groq(api_key="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")
+client =Groq(api_key=os.environ.get("GROQ_API_KEY")
 
 def get_deterministic_audit(url: str):
     target_url = url if url.startswith("http") else f"https://{url}"
@@ -130,14 +130,16 @@ async def analyze_site(request: AuditRequest):
         except Exception as e:
             yield json.dumps({"type": "error", "msg": str(e)}) + "\n"
 
-    return StreamingResponse(
+   return StreamingResponse(
         stream_analysis(), 
         media_type="application/x-ndjson",
         headers={
-            "X-Accel-Buffering": "no",  # Disables buffering on Nginx/Proxies
-            "Cache-Control": "no-cache", # Ensures fresh data
-            "Connection": "keep-alive",  # Keeps the stream open
-            "Content-Encoding": "none"   # Prevents compression from breaking the stream
+            "X-Accel-Buffering": "no",       # Prevents Render/Nginx from holding the data
+            "Cache-Control": "no-cache",    # Ensures data isn't stale
+            "Connection": "keep-alive",     # Keeps the pipe open for the AI response
+            "Content-Encoding": "identity"  # Prevents compression from breaking the stream
+        }
+    )
         }
     )
         
@@ -146,3 +148,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
