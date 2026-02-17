@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 // --- HELPER COMPONENTS ---
 const getScoreColor = (score) => {
@@ -36,17 +38,14 @@ const CoreMetric = ({ label, score, colorClass }) => (
 
 const RoadmapStep = ({ step, index }) => {
   const [isOpen, setIsOpen] = useState(index === 0);
-  const title = step.task || step.point || "Strategy Node";
-  
-  // Don't render empty placeholders if the AI hasn't sent data yet
-  if (!step.task && !step.point && !step.description) return null;
+  if (!step.task && !step.point) return null;
 
   return (
     <div className={`rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${isOpen ? 'bg-slate-900 border-blue-600/50' : 'bg-slate-950 border-slate-800'}`}>
       <button onClick={() => setIsOpen(!isOpen)} className="w-full p-6 flex items-center justify-between text-left outline-none">
         <div className="flex items-center gap-6">
           <span className={`text-3xl font-black italic ${isOpen ? 'text-blue-500' : 'text-slate-800'}`}>0{index + 1}</span>
-          <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{title}</h4>
+          <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{step.task || step.point || "Strategy Node"}</h4>
         </div>
         <span className={`text-3xl transition-transform duration-300 ${isOpen ? 'rotate-45 text-blue-500' : 'text-slate-700'}`}>+</span>
       </button>
@@ -56,11 +55,11 @@ const RoadmapStep = ({ step, index }) => {
           <div className="grid md:grid-cols-2 gap-6 pt-4">
             <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5">
               <span className="text-[11px] font-black text-blue-500 uppercase tracking-widest block mb-2">Psychological Strategy</span>
-              <p className="text-sm text-slate-400">{step.psych_impact || "N/A"}</p>
+              <p className="text-sm text-slate-400">{step.psych_impact || "Analysis pending..."}</p>
             </div>
             <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5">
               <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest block mb-2">Success Metric</span>
-              <p className="text-sm text-slate-400">{step.success_metric || "KPI Pending"}</p>
+              <p className="text-sm text-slate-400">{step.success_metric || "KPI calibrating..."}</p>
             </div>
           </div>
         </div>
@@ -75,6 +74,25 @@ export default function App() {
   const [ai, setAi] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("System Idle");
+  const reportRef = useRef();
+
+  const downloadReport = async () => {
+    setStatus("Generating PDF...");
+    const element = reportRef.current;
+    const canvas = await html2canvas(element, { 
+      backgroundColor: '#020617', 
+      scale: 2,
+      useCORS: true 
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`landalytics-audit-${new Date().getTime()}.pdf`);
+    setStatus("PDF Dispatched.");
+  };
 
   const runAudit = async () => {
     if (!url) return;
@@ -105,14 +123,14 @@ export default function App() {
             const data = JSON.parse(line);
             if (data.type === "metrics") {
               setScores(data.scores);
-              setStatus("Heuristics Loaded. Syncing AI Narrative...");
+              setStatus("Core Heuristics Loaded...");
             }
             if (data.type === "ai_narrative") {
               setAi(data);
               setLoading(false);
               setStatus("Scan Complete.");
             }
-          } catch (e) { console.error("Parse Error", e); }
+          } catch (e) { console.warn("Syncing Data Fragment..."); }
         }
       }
     } catch (e) {
@@ -120,8 +138,6 @@ export default function App() {
       setLoading(false);
     }
   };
-
-  // --- RENDERING LOGIC ---
 
   if (!scores && !loading) {
     return (
@@ -150,10 +166,15 @@ export default function App() {
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans pb-40">
       <nav className="fixed top-0 w-full z-[100] bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 px-10 py-6 flex justify-between items-center">
         <span className="text-2xl font-black italic text-white uppercase tracking-tighter">LANDALYTICS <span className="text-blue-600">ULTIMATE</span></span>
-        <span className="text-[10px] font-mono text-blue-500 tracking-[0.3em] uppercase animate-pulse">{status}</span>
+        <div className="flex items-center gap-6">
+          {!loading && ai && (
+            <button onClick={downloadReport} className="text-[10px] font-black bg-white text-black px-4 py-2 rounded-full hover:bg-blue-600 hover:text-white transition-all uppercase tracking-widest">Download PDF</button>
+          )}
+          <span className="text-[10px] font-mono text-blue-500 tracking-[0.3em] uppercase animate-pulse">{status}</span>
+        </div>
       </nav>
 
-      <div className="max-w-[1200px] mx-auto p-10 pt-32 space-y-40">
+      <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-32 space-y-40 bg-[#020617]">
         
         {/* SECTION: CORE METRICS */}
         <section className="space-y-16">
@@ -191,7 +212,6 @@ export default function App() {
         <section className="space-y-16">
           <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
           <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
-            {/* Strengths */}
             <div className="p-12 bg-[#020617]">
               <h4 className="text-emerald-400 font-black text-xs uppercase mb-8">Strengths</h4>
               {(ai?.swot?.strengths || []).map((s, i) => (
@@ -201,7 +221,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-            {/* Weaknesses */}
             <div className="p-12 bg-[#020617] border-l border-slate-800">
               <h4 className="text-red-400 font-black text-xs uppercase mb-8">Weaknesses</h4>
               {(ai?.swot?.weaknesses || []).map((w, i) => (
@@ -211,7 +230,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-            {/* Opportunities */}
             <div className="p-12 bg-[#020617] border-t border-slate-800">
               <h4 className="text-blue-400 font-black text-xs uppercase mb-8">Opportunities</h4>
               {(ai?.swot?.opportunities || []).map((o, i) => (
@@ -221,7 +239,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-            {/* Threats */}
             <div className="p-12 bg-[#020617] border-t border-l border-slate-800">
               <h4 className="text-amber-400 font-black text-xs uppercase mb-8">Threats</h4>
               {(ai?.swot?.threats || []).map((t, i) => (
@@ -245,7 +262,7 @@ export default function App() {
         </section>
 
         {/* SECTION: FINAL VERDICT */}
-        <section className="bg-blue-600 p-20 rounded-[4rem] text-center relative border-4 border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.3)]">
+        <section className="bg-blue-600 p-20 rounded-[4rem] text-center relative border-4 border-white/10 shadow-2xl">
           <h3 className="text-xs font-black text-white/50 uppercase tracking-widest mb-10">Executive Recommendation</h3>
           <h2 className="text-7xl font-black italic text-white uppercase mb-10 tracking-tighter leading-none">
             {ai?.final_verdict?.overall_readiness || "EVALUATING"}
@@ -256,7 +273,6 @@ export default function App() {
             </p>
           </div>
         </section>
-
       </div>
     </div>
   );
