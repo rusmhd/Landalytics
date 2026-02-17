@@ -75,7 +75,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("System Idle");
 
-  const runAudit = async () => {
+const runAudit = async () => {
     if (!url) return;
     setLoading(true);
     setScores(null);
@@ -83,7 +83,9 @@ export default function App() {
     setStatus("Initiating Neural Capture...");
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/analyze", {
+      const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+      const response = await fetch(`${API_BASE}/api/v1/analyze`, {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
@@ -100,25 +102,29 @@ export default function App() {
         const lines = chunk.split("\n");
 
         lines.forEach(line => {
-          if (!line) return;
-          const data = JSON.parse(line);
-          if (data.type === "metrics") {
-            setScores(data.scores);
-            setStatus("Heuristics Loaded. Synthesizing AI Narrative...");
-          }
-          if (data.type === "ai_narrative") {
-            setAi(data);
-            setStatus("Scan Complete.");
+          if (!line || line.trim() === "") return;
+          try {
+            const data = JSON.parse(line);
+            if (data.type === "metrics") {
+              setScores(data.scores);
+              setStatus("Heuristics Loaded. Synthesizing AI Narrative...");
+            }
+            if (data.type === "ai_narrative") {
+              setAi(data);
+              setStatus("Scan Complete.");
+            }
+          } catch (e) {
+            console.error("Parsing error", e);
           }
         });
       }
     } catch (e) { 
       setStatus("Error: Check Backend Connection");
+      console.error(e);
     } finally { 
       setLoading(false); 
     }
-  };
-
+  }; // This now correctly closes the function.
   if (!scores && !loading) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center font-sans">
@@ -257,4 +263,5 @@ export default function App() {
       </div>
     </div>
   );
+
 }
