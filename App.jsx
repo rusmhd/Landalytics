@@ -201,34 +201,69 @@ export default function App() {
           </div>
         </section>
 
-        <section className="space-y-16">
-          <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
-          <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
-            <div className="p-12 bg-[#020617] hover:bg-emerald-950/10 transition-colors">
-              <h4 className="text-emerald-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">Strengths</h4>
-              {ai?.swot?.strengths?.map((s, i) => (
-                <div key={i} className="mb-8"><p className="text-white font-black text-xl mb-1">{s.point}</p><p className="text-slate-400 text-sm">{s.evidence}</p></div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] hover:bg-red-950/10 transition-colors border-l border-slate-800">
-              <h4 className="text-red-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">Weaknesses</h4>
-              {ai?.swot?.weaknesses?.map((w, i) => (
-                <div key={i} className="mb-8"><p className="text-white font-black text-xl mb-1">{w.point}</p><p className="text-slate-400 text-sm">{w.fix_suggestion}</p></div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] hover:bg-blue-950/10 transition-colors border-t border-slate-800">
-              <h4 className="text-blue-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">Opportunities</h4>
-              {ai?.swot?.opportunities?.map((o, i) => (
-                <div key={i} className="mb-8"><p className="text-white font-black text-xl mb-1">{o.point}</p><p className="text-slate-400 text-sm">{o.potential_impact}</p></div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] hover:bg-amber-950/10 transition-colors border-t border-l border-slate-800">
-              <h4 className="text-amber-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">Threats</h4>
-              {ai?.swot?.threats?.map((t, i) => (
-                <div key={i} className="mb-8"><p className="text-white font-black text-xl mb-1">{t.point}</p><p className="text-slate-400 text-sm">{t.mitigation_strategy}</p></div>
-              ))}
-            </div>
-          </div>
+{/* 4-QUADRANT SWOT MATRIX */}
+<section className="space-y-16">
+  <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
+  <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
+    
+    {/* 1. STRENGTHS */}
+    <div className="p-12 bg-[#020617] hover:bg-emerald-950/10 transition-colors">
+      <h4 className="text-emerald-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> Strengths
+      </h4>
+      {(ai?.swot?.strengths || ai?.strengths || []).map((s, i) => (
+        <div key={i} className="mb-8">
+          <p className="text-white font-black text-xl mb-1">{s.point || s.title || "Capturing Signal..."}</p>
+          <p className="text-slate-400 text-sm leading-relaxed">{s.evidence || s.description || "Heuristic confirmation in progress."}</p>
+        </div>
+      ))}
+      {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+    </div>
+
+    {/* 2. WEAKNESSES */}
+    <div className="p-12 bg-[#020617] hover:bg-red-950/10 transition-colors border-l border-slate-800">
+      <h4 className="text-red-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> Weaknesses
+      </h4>
+      {(ai?.swot?.weaknesses || ai?.weaknesses || []).map((w, i) => (
+        <div key={i} className="mb-8">
+          <p className="text-white font-black text-xl mb-1">{w.point || w.title || "Identifying Friction..."}</p>
+          <p className="text-slate-400 text-sm leading-relaxed">{w.fix_suggestion || w.fix || "Analyzing optimization path."}</p>
+        </div>
+      ))}
+      {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+    </div>
+
+    {/* 3. OPPORTUNITIES */}
+    <div className="p-12 bg-[#020617] hover:bg-blue-950/10 transition-colors border-t border-slate-800">
+      <h4 className="text-blue-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" /> Opportunities
+      </h4>
+      {(ai?.swot?.opportunities || ai?.opportunities || []).map((o, i) => (
+        <div key={i} className="mb-8">
+          <p className="text-white font-black text-xl mb-1">{o.point || o.title || "Growth Node..."}</p>
+          <p className="text-slate-400 text-sm leading-relaxed">{o.potential_impact || o.impact || "Calculating leverage potential."}</p>
+        </div>
+      ))}
+      {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+    </div>
+
+    {/* 4. THREATS */}
+    <div className="p-12 bg-[#020617] hover:bg-amber-950/10 transition-colors border-t border-l border-slate-800">
+      <h4 className="text-amber-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+        <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" /> Threats
+      </h4>
+      {(ai?.swot?.threats || ai?.threats || []).map((t, i) => (
+        <div key={i} className="mb-8">
+          <p className="text-white font-black text-xl mb-1">{t.point || t.title || "Market Friction..."}</p>
+          <p className="text-slate-400 text-sm leading-relaxed">{t.mitigation_strategy || t.mitigation || "Defining defense protocols."}</p>
+        </div>
+      ))}
+      {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+    </div>
+
+  </div>
+</section>
         </section>
 
         <section className="space-y-16">
@@ -249,3 +284,89 @@ export default function App() {
     </div>
   );
 }
+
+{/* --- STRATEGIC MATRIX (SWOT) --- */}
+        <section className="space-y-16">
+          <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
+          <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
+            
+            {/* 1. STRENGTHS */}
+            <div className="p-12 bg-[#020617] hover:bg-emerald-950/10 transition-colors">
+              <h4 className="text-emerald-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> Strengths
+              </h4>
+              {(ai?.swot?.strengths || ai?.strengths || []).map((s, i) => (
+                <div key={i} className="mb-8">
+                  <p className="text-white font-black text-xl mb-1">{s.point || s.title || "Capturing Signal..."}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{s.evidence || s.description || "Heuristic confirmation in progress."}</p>
+                </div>
+              ))}
+              {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+            </div>
+
+            {/* 2. WEAKNESSES */}
+            <div className="p-12 bg-[#020617] hover:bg-red-950/10 transition-colors border-l border-slate-800">
+              <h4 className="text-red-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> Weaknesses
+              </h4>
+              {(ai?.swot?.weaknesses || ai?.weaknesses || []).map((w, i) => (
+                <div key={i} className="mb-8">
+                  <p className="text-white font-black text-xl mb-1">{w.point || w.title || "Identifying Friction..."}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{w.fix_suggestion || w.fix || "Analyzing optimization path."}</p>
+                </div>
+              ))}
+              {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+            </div>
+
+            {/* 3. OPPORTUNITIES */}
+            <div className="p-12 bg-[#020617] hover:bg-blue-950/10 transition-colors border-t border-slate-800">
+              <h4 className="text-blue-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" /> Opportunities
+              </h4>
+              {(ai?.swot?.opportunities || ai?.opportunities || []).map((o, i) => (
+                <div key={i} className="mb-8">
+                  <p className="text-white font-black text-xl mb-1">{o.point || o.title || "Growth Node..."}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{o.potential_impact || o.impact || "Calculating leverage potential."}</p>
+                </div>
+              ))}
+              {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+            </div>
+
+            {/* 4. THREATS */}
+            <div className="p-12 bg-[#020617] hover:bg-amber-950/10 transition-colors border-t border-l border-slate-800">
+              <h4 className="text-amber-400 font-black text-xs uppercase mb-8 tracking-widest flex items-center gap-2">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" /> Threats
+              </h4>
+              {(ai?.swot?.threats || ai?.threats || []).map((t, i) => (
+                <div key={i} className="mb-8">
+                  <p className="text-white font-black text-xl mb-1">{t.point || t.title || "Market Friction..."}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{t.mitigation_strategy || t.mitigation || "Defining defense protocols."}</p>
+                </div>
+              ))}
+              {!ai && <p className="text-slate-700 italic font-bold">Waiting for neural scan...</p>}
+            </div>
+          </div>
+        </section>
+
+        {/* --- EXECUTION ROADMAP --- */}
+        <section className="space-y-16">
+          <h3 className="text-5xl font-black italic text-white uppercase text-center tracking-tighter">Execution Roadmap</h3>
+          <div className="max-w-[900px] mx-auto space-y-8">
+            {(ai?.roadmap || [{},{},{},{}]).map((step, i) => (
+              <RoadmapStep key={i} step={step} index={i} />
+            ))}
+          </div>
+        </section>
+
+        {/* --- FINAL RECOMMENDATION --- */}
+        <section className="bg-blue-600 p-20 rounded-[4rem] text-center relative border-4 border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.3)]">
+          <h3 className="text-xs font-black text-white/50 uppercase tracking-widest mb-10">Executive Recommendation</h3>
+          <h2 className="text-7xl font-black italic text-white uppercase mb-10 tracking-tighter leading-none">
+            {ai?.final_verdict?.overall_readiness || ai?.readiness || "EVALUATING"}
+          </h2>
+          <div className="bg-black/30 p-10 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
+            <p className="text-3xl font-black text-white italic leading-tight uppercase tracking-tight">
+              "{ai?.final_verdict?.single_most_impactful_change || ai?.recommendation || "Finalizing core directive..."}"
+            </p>
+          </div>
+        </section>
