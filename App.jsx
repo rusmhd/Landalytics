@@ -36,14 +36,17 @@ const CoreMetric = ({ label, score, colorClass }) => (
 
 const RoadmapStep = ({ step, index }) => {
   const [isOpen, setIsOpen] = useState(index === 0);
-  if (!step || (!step.task && !step.point)) return null;
+  const title = step.task || step.point || "Strategy Node";
+  
+  // Don't render empty placeholders if the AI hasn't sent data yet
+  if (!step.task && !step.point && !step.description) return null;
 
   return (
     <div className={`rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${isOpen ? 'bg-slate-900 border-blue-600/50' : 'bg-slate-950 border-slate-800'}`}>
       <button onClick={() => setIsOpen(!isOpen)} className="w-full p-6 flex items-center justify-between text-left outline-none">
         <div className="flex items-center gap-6">
           <span className={`text-3xl font-black italic ${isOpen ? 'text-blue-500' : 'text-slate-800'}`}>0{index + 1}</span>
-          <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{step.task || step.point || "Strategy Node"}</h4>
+          <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{title}</h4>
         </div>
         <span className={`text-3xl transition-transform duration-300 ${isOpen ? 'rotate-45 text-blue-500' : 'text-slate-700'}`}>+</span>
       </button>
@@ -75,7 +78,7 @@ export default function App() {
 
   const runAudit = async () => {
     if (!url) return;
-    const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "http://localhost:8000";
+    const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "https://landalytics.onrender.com";
     setLoading(true); setScores(null); setAi(null); setStatus("Initiating Neural Capture...");
 
     try {
@@ -100,7 +103,10 @@ export default function App() {
           if (!line.trim()) continue;
           try {
             const data = JSON.parse(line);
-            if (data.type === "metrics") setScores(data.scores);
+            if (data.type === "metrics") {
+              setScores(data.scores);
+              setStatus("Heuristics Loaded. Syncing AI Narrative...");
+            }
             if (data.type === "ai_narrative") {
               setAi(data);
               setLoading(false);
@@ -114,6 +120,8 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  // --- RENDERING LOGIC ---
 
   if (!scores && !loading) {
     return (
@@ -183,39 +191,43 @@ export default function App() {
         <section className="space-y-16">
           <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
           <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
+            {/* Strengths */}
             <div className="p-12 bg-[#020617]">
               <h4 className="text-emerald-400 font-black text-xs uppercase mb-8">Strengths</h4>
               {(ai?.swot?.strengths || []).map((s, i) => (
                 <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{s.point}</p>
-                  <p className="text-slate-400 text-sm">{s.evidence}</p>
+                  <p className="text-white font-black text-xl mb-1">{s.point || s.title}</p>
+                  <p className="text-slate-400 text-sm">{s.evidence || s.description}</p>
                 </div>
               ))}
             </div>
+            {/* Weaknesses */}
             <div className="p-12 bg-[#020617] border-l border-slate-800">
               <h4 className="text-red-400 font-black text-xs uppercase mb-8">Weaknesses</h4>
               {(ai?.swot?.weaknesses || []).map((w, i) => (
                 <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{w.point}</p>
-                  <p className="text-slate-400 text-sm">{w.fix_suggestion}</p>
+                  <p className="text-white font-black text-xl mb-1">{w.point || w.title}</p>
+                  <p className="text-slate-400 text-sm">{w.fix_suggestion || w.description}</p>
                 </div>
               ))}
             </div>
+            {/* Opportunities */}
             <div className="p-12 bg-[#020617] border-t border-slate-800">
               <h4 className="text-blue-400 font-black text-xs uppercase mb-8">Opportunities</h4>
               {(ai?.swot?.opportunities || []).map((o, i) => (
                 <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{o.point}</p>
-                  <p className="text-slate-400 text-sm">{o.potential_impact}</p>
+                  <p className="text-white font-black text-xl mb-1">{o.point || o.title}</p>
+                  <p className="text-slate-400 text-sm">{o.potential_impact || o.description}</p>
                 </div>
               ))}
             </div>
+            {/* Threats */}
             <div className="p-12 bg-[#020617] border-t border-l border-slate-800">
               <h4 className="text-amber-400 font-black text-xs uppercase mb-8">Threats</h4>
               {(ai?.swot?.threats || []).map((t, i) => (
                 <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{t.point}</p>
-                  <p className="text-slate-400 text-sm">{t.mitigation_strategy}</p>
+                  <p className="text-white font-black text-xl mb-1">{t.point || t.title}</p>
+                  <p className="text-slate-400 text-sm">{t.mitigation_strategy || t.description}</p>
                 </div>
               ))}
             </div>
