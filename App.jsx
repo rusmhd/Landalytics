@@ -59,31 +59,57 @@ export default function App() {
   const [status, setStatus] = useState("System Idle");
   const reportRef = useRef();
 
-  // --- FIXED PDF LOGIC (Full Height) ---
+  // --- NAVIGATION HELPERS ---
+  const goHome = () => {
+    setScores(null);
+    setAi(null);
+    setLoading(false);
+    setUrl('');
+    setStatus("System Idle");
+  };
+
+  // --- PDF MULTI-PAGE LOGIC ---
   const downloadReport = async () => {
     if (!ai) return;
-    setStatus("Generating PDF...");
+    setStatus("Generating Multi-Page PDF...");
     const element = reportRef.current;
     
     try {
       const canvas = await html2canvas(element, { 
         backgroundColor: '#020617', 
-        scale: 1.5, // Slightly lower scale to prevent memory crashes on long pages
+        scale: 2,
         useCORS: true,
-        height: element.scrollHeight, // Force capture of full length
+        windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // If the report is longer than one A4 page, it will scale to fit one long page. 
-      // This ensures the Roadmap and Verdict are included.
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`landalytics-full-audit.pdf`);
-      setStatus("PDF Dispatched.");
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = pdfWidth / imgWidth;
+      const canvasPageHeight = pdfHeight / ratio;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First Page
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight * ratio);
+      heightLeft -= canvasPageHeight;
+
+      // Loop for subsequent pages
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position * ratio, pdfWidth, imgHeight * ratio);
+        heightLeft -= canvasPageHeight;
+      }
+
+      pdf.save(`landalytics-report.pdf`);
+      setStatus("Full Report Dispatched.");
     } catch (err) {
       console.error(err);
       setStatus("PDF Generation Failed");
@@ -92,8 +118,10 @@ export default function App() {
 
   const runAudit = async () => {
     if (!url) return;
+    // Uses the Environment Variable from your Render dashboard
     const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "https://landalytics.onrender.com";
     setLoading(true); setScores(null); setAi(null); setStatus("Initiating Neural Capture...");
+    
     try {
       const response = await fetch(`${API_BASE}/api/v1/analyze`, {
         method: "POST",
@@ -115,25 +143,11 @@ export default function App() {
             const data = JSON.parse(line);
             if (data.type === "metrics") setScores(data.scores);
             if (data.type === "ai_narrative") { setAi(data); setLoading(false); setStatus("Scan Complete."); }
-          } catch (e) { console.warn("Syncing..."); }
+          } catch (e) { console.warn("Processing data..."); }
         }
       }
     } catch (e) { setStatus("Neural Link Error"); setLoading(false); }
   };
-
-  if (!scores && !loading) {
-    return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
-        <div className="w-full max-w-4xl space-y-12">
-          <h1 className="text-7xl md:text-9xl font-black italic text-white tracking-tighter uppercase leading-none">LANDA<span className="text-blue-600">LYTICS</span></h1>
-          <div className="flex flex-col md:flex-row bg-slate-900 border-2 border-slate-800 p-3 rounded-[3rem]">
-            <input className="flex-1 bg-transparent px-8 py-4 text-white outline-none text-2xl font-bold uppercase placeholder:text-slate-700" placeholder="ENTER TARGET URL..." value={url} onChange={e => setUrl(e.target.value)} />
-            <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500">SCAN SITE</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const nodes = [
     {t:"Hero Clarity", s:85, d:"F-pattern layout detected."},
@@ -147,94 +161,90 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 pb-40">
       
-      {/* NAVIGATION - BOLD & BIG */}
+      {/* NAVIGATION - BOLD & ALWAYS ACCESSIBLE */}
       <nav className="fixed top-0 w-full z-[100] bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 px-10 py-8 flex justify-between items-end">
         <div>
-          <span className="text-3xl font-black italic text-white uppercase tracking-tighter">LANDALYTICS</span>
+          <span onClick={goHome} className="text-3xl font-black italic text-white uppercase tracking-tighter cursor-pointer">LANDALYTICS</span>
           <p className="text-[10px] font-mono text-blue-500 tracking-[0.4em] uppercase animate-pulse mt-1">{status}</p>
         </div>
         <div className="flex items-center gap-12">
-          <button 
-            onClick={() => window.location.reload()} 
-            className="text-3xl font-black italic text-white/30 hover:text-white transition-all uppercase tracking-tighter"
-          >
-            HOME
-          </button>
-          <button 
-            onClick={downloadReport} 
-            disabled={!ai} 
-            className={`text-3xl font-black italic uppercase tracking-tighter transition-all ${ai ? "text-blue-600 hover:text-blue-400" : "text-white/5 cursor-not-allowed"}`}
-          >
-            PDF DOWNLOAD
-          </button>
+          <button onClick={goHome} className="text-3xl font-black italic text-white hover:text-blue-500 transition-all uppercase tracking-tighter">HOME</button>
+          <button onClick={downloadReport} disabled={!ai} className={`text-3xl font-black italic uppercase tracking-tighter transition-all ${ai ? "text-blue-600 hover:text-blue-400" : "text-white/5 cursor-not-allowed"}`}>PDF DOWNLOAD</button>
         </div>
       </nav>
 
-      <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-48 space-y-40 bg-[#020617]">
-        
-        {/* SECTION 1: CORE METRICS */}
-        <section className="space-y-16">
-          <h2 className="text-5xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Core Results</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {Object.keys(scores || {}).map(k => <CoreMetric key={k} label={k.replace('_',' ')} score={scores[k]} colorClass={getScoreColor(scores[k])} />)}
+      {/* SEARCH VIEW (HOME) */}
+      {(!scores && !loading) ? (
+        <div className="min-h-screen flex items-center justify-center p-6 text-center">
+          <div className="w-full max-w-4xl space-y-12">
+            <h1 className="text-7xl md:text-9xl font-black italic text-white tracking-tighter uppercase leading-none">LANDA<span className="text-blue-600">LYTICS</span></h1>
+            <div className="flex flex-col md:flex-row bg-slate-900 border-2 border-slate-800 p-3 rounded-[3rem]">
+              <input className="flex-1 bg-transparent px-8 py-4 text-white outline-none text-2xl font-bold uppercase placeholder:text-slate-700" placeholder="ENTER TARGET URL..." value={url} onChange={e => setUrl(e.target.value)} />
+              <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500">SCAN SITE</button>
+            </div>
           </div>
-        </section>
+        </div>
+      ) : (
+        /* REPORT VIEW */
+        <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-48 space-y-40 bg-[#020617]">
+          <section className="space-y-16">
+            <h2 className="text-5xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Core Results</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+              {Object.keys(scores || {}).map(k => <CoreMetric key={k} label={k.replace('_',' ')} score={scores[k]} colorClass={getScoreColor(scores[k])} />)}
+            </div>
+          </section>
 
-        {/* SECTION 2: DEEP SCAN */}
-        <section className="space-y-16">
-          <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Deep Node Scan</h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            {nodes.map((n, i) => (
-              <div key={i} className="bg-slate-900/40 p-8 border border-white/5 rounded-[2.5rem] flex flex-col justify-between h-[280px]">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{n.t}</span>
-                  <span className={`text-3xl font-black italic ${getScoreColor(n.s)}`}>{n.s}%</span>
-                </div>
-                <p className="text-lg font-bold text-slate-200 italic mb-4">"{n.d}"</p>
-                <div className="bg-white/5 h-2 w-full rounded-full overflow-hidden">
-                  <div className={`h-full ${getProgressColor(n.s)}`} style={{width: `${n.s}%`}} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SECTION 3: SWOT MATRIX */}
-        <section className="space-y-16">
-          <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
-          <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
-            {['strengths', 'weaknesses', 'opportunities', 'threats'].map(type => (
-              <div key={type} className="p-12 bg-[#020617]">
-                <h4 className={`font-black text-xs uppercase mb-8 ${type === 'strengths' ? 'text-emerald-400' : type === 'weaknesses' ? 'text-red-400' : type === 'opportunities' ? 'text-blue-400' : 'text-amber-400'}`}>{type}</h4>
-                {(ai?.swot?.[type] || []).map((s, i) => (
-                  <div key={i} className="mb-8">
-                    <p className="text-white font-black text-xl mb-1">{s.point || s.title}</p>
-                    <p className="text-slate-400 text-sm leading-relaxed">{s.evidence || s.fix_suggestion || s.potential_impact || s.mitigation_strategy || s.description}</p>
+          <section className="space-y-16">
+            <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Deep Node Scan</h3>
+            <div className="grid md:grid-cols-3 gap-8">
+              {nodes.map((n, i) => (
+                <div key={i} className="bg-slate-900/40 p-8 border border-white/5 rounded-[2.5rem] flex flex-col justify-between h-[280px]">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{n.t}</span>
+                    <span className={`text-3xl font-black italic ${getScoreColor(n.s)}`}>{n.s}%</span>
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
+                  <p className="text-lg font-bold text-slate-200 italic mb-4">"{n.d}"</p>
+                  <div className="bg-white/5 h-2 w-full rounded-full overflow-hidden">
+                    <div className={`h-full ${getProgressColor(n.s)}`} style={{width: `${n.s}%`}} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        {/* SECTION 4: ROADMAP */}
-        <section className="space-y-16">
-          <h3 className="text-6xl font-black italic text-white uppercase text-center tracking-tighter">Execution Roadmap</h3>
-          <div className="max-w-[950px] mx-auto space-y-10">
-            {(ai?.roadmap || [{},{},{},{}]).map((s, i) => <RoadmapStep key={i} step={s} index={i} />)}
-          </div>
-        </section>
+          <section className="space-y-16">
+            <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
+            <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
+              {['strengths', 'weaknesses', 'opportunities', 'threats'].map(type => (
+                <div key={type} className="p-12 bg-[#020617]">
+                  <h4 className={`font-black text-xs uppercase mb-8 ${type === 'strengths' ? 'text-emerald-400' : type === 'weaknesses' ? 'text-red-400' : type === 'opportunities' ? 'text-blue-400' : 'text-amber-400'}`}>{type}</h4>
+                  {(ai?.swot?.[type] || []).map((s, i) => (
+                    <div key={i} className="mb-8">
+                      <p className="text-white font-black text-xl mb-1">{s.point || s.title}</p>
+                      <p className="text-slate-400 text-sm leading-relaxed">{s.evidence || s.fix_suggestion || s.potential_impact || s.mitigation_strategy || s.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
 
-        {/* SECTION 5: FINAL VERDICT */}
-        <section className="bg-blue-600 p-24 rounded-[4rem] text-center border-4 border-white/10 shadow-[0_0_60px_rgba(37,99,235,0.4)]">
-          <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.4em] mb-12">Executive Recommendation</h3>
-          <h2 className="text-8xl font-black italic text-white uppercase mb-12 tracking-tighter leading-none">{ai?.final_verdict?.overall_readiness || "EVALUATING"}</h2>
-          <div className="bg-black/30 p-12 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
-            <p className="text-4xl font-black text-white italic leading-tight uppercase">"{ai?.final_verdict?.single_most_impactful_change || "Finalizing core directive..."}"</p>
-          </div>
-        </section>
+          <section className="space-y-16">
+            <h3 className="text-6xl font-black italic text-white uppercase text-center tracking-tighter">Execution Roadmap</h3>
+            <div className="max-w-[950px] mx-auto space-y-10">
+              {(ai?.roadmap || [{},{},{},{}]).map((s, i) => <RoadmapStep key={i} step={s} index={i} />)}
+            </div>
+          </section>
 
-      </div>
+          <section className="bg-blue-600 p-24 rounded-[4rem] text-center border-4 border-white/10 shadow-[0_0_60px_rgba(37,99,235,0.4)]">
+            <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.4em] mb-12">Executive Recommendation</h3>
+            <h2 className="text-8xl font-black italic text-white uppercase mb-12 tracking-tighter leading-none">{ai?.final_verdict?.overall_readiness || "EVALUATING"}</h2>
+            <div className="bg-black/30 p-12 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
+              <p className="text-4xl font-black text-white italic leading-tight uppercase">"{ai?.final_verdict?.single_most_impactful_change || "Finalizing core directive..."}"</p>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
