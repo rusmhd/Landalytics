@@ -21,7 +21,7 @@ class AuditRequest(BaseModel):
     url: str
 
 # Groq Client setup
-client =Groq(api_key=os.environ.get("GROQ_API_KEY")
+client =Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def get_deterministic_audit(url: str):
     target_url = url if url.startswith("http") else f"https://{url}"
@@ -146,4 +146,5 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
