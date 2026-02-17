@@ -134,18 +134,16 @@ async def analyze_site(request: AuditRequest):
         stream_analysis(), 
         media_type="application/x-ndjson",
         headers={
-            "X-Accel-Buffering": "no",       # Prevents Render/Nginx from holding the data
-            "Cache-Control": "no-cache",    # Ensures data isn't stale
-            "Connection": "keep-alive",     # Keeps the pipe open for the AI response
-            "Content-Encoding": "identity"  # Prevents compression from breaking the stream
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Encoding": "identity"
         }
     )
-        }
-    )
-        
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
