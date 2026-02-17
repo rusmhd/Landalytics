@@ -2,68 +2,51 @@ import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-// --- HELPER COMPONENTS ---
-const getScoreColor = (score) => {
-  if (score >= 90) return 'text-emerald-500';
-  if (score >= 70) return 'text-blue-500';
-  if (score >= 50) return 'text-amber-500';
-  return 'text-red-500';
-};
+// --- STYLING HELPERS ---
+const getScoreColor = (s) => s >= 90 ? 'text-emerald-500' : s >= 70 ? 'text-blue-500' : s >= 50 ? 'text-amber-500' : 'text-red-500';
+const getProgressColor = (s) => s >= 90 ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : s >= 70 ? 'bg-blue-500 shadow-[0_0_10px_#3b82f6]' : s >= 50 ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-red-500 shadow-[0_0_10px_#ef4444]';
 
-const getProgressColor = (score) => {
-  if (score >= 90) return 'bg-emerald-500 shadow-[0_0_10px_#10b981]';
-  if (score >= 70) return 'bg-blue-500 shadow-[0_0_10px_#3b82f6]';
-  if (score >= 50) return 'bg-amber-500 shadow-[0_0_10px_#f59e0b]';
-  return 'bg-red-500 shadow-[0_0_10px_#ef4444]';
-};
-
+// --- SUB-COMPONENTS ---
 const CoreMetric = ({ label, score, colorClass }) => (
-  <div className="flex flex-col items-center p-6 bg-slate-900/60 rounded-[2.5rem] border-2 border-white/5 hover:border-blue-500/40 transition-all shadow-xl">
+  <div className="flex flex-col items-center p-6 bg-slate-900/60 rounded-[2.5rem] border-2 border-white/5 shadow-xl">
     <div className="relative w-28 h-28 flex items-center justify-center mb-4">
       <svg className="w-full h-full transform -rotate-90">
         <circle cx="56" cy="56" r="50" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-800" />
-        <circle 
-          cx="56" cy="56" r="50" stroke="currentColor" strokeWidth="8" fill="transparent" 
-          strokeDasharray={314} 
-          strokeDashoffset={314 - (314 * (score || 0)) / 100}
-          className={`${colorClass} transition-all duration-1000`} 
-          strokeLinecap="round" 
-        />
+        <circle cx="56" cy="56" r="50" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={314} strokeDashoffset={314 - (314 * (score || 0)) / 100} className={`${colorClass} transition-all duration-1000`} strokeLinecap="round" />
       </svg>
       <span className={`absolute text-2xl font-black italic ${colorClass}`}>{score || 0}%</span>
     </div>
-    <span className="text-[12px] font-black uppercase tracking-widest text-slate-400 text-center leading-tight">{label}</span>
+    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">{label}</span>
   </div>
 );
 
 const RoadmapStep = ({ step, index }) => {
   const [isOpen, setIsOpen] = useState(index === 0);
   if (!step.task && !step.point) return null;
-
   return (
-    <div className={`rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${isOpen ? 'bg-slate-900 border-blue-600/50' : 'bg-slate-950 border-slate-800'}`}>
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full p-6 flex items-center justify-between text-left outline-none">
+    <div className={`rounded-[2rem] border-2 transition-all ${isOpen ? 'bg-slate-900 border-blue-600/50' : 'bg-slate-950 border-slate-800'}`}>
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full p-8 flex items-center justify-between text-left outline-none">
         <div className="flex items-center gap-6">
-          <span className={`text-3xl font-black italic ${isOpen ? 'text-blue-500' : 'text-slate-800'}`}>0{index + 1}</span>
-          <h4 className="text-xl font-black text-white italic uppercase tracking-tighter">{step.task || step.point || "Strategy Node"}</h4>
+          <span className={`text-4xl font-black italic ${isOpen ? 'text-blue-500' : 'text-slate-800'}`}>0{index + 1}</span>
+          <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter">{step.task || step.point}</h4>
         </div>
-        <span className={`text-3xl transition-transform duration-300 ${isOpen ? 'rotate-45 text-blue-500' : 'text-slate-700'}`}>+</span>
+        <span className="text-3xl text-slate-700">{isOpen ? '−' : '+'}</span>
       </button>
-      <div className={`transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className="px-8 pb-10 ml-12 space-y-6 border-l-4 border-blue-600/20">
-          <p className="text-lg text-slate-200 font-bold leading-snug italic">"{step.tech_reason || step.description || "Synthesizing execution path..."}"</p>
+      {isOpen && (
+        <div className="px-10 pb-12 ml-16 space-y-6 border-l-4 border-blue-600/20">
+          <p className="text-xl text-slate-200 font-bold italic leading-tight">"{step.tech_reason || step.description}"</p>
           <div className="grid md:grid-cols-2 gap-6 pt-4">
             <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5">
-              <span className="text-[11px] font-black text-blue-500 uppercase tracking-widest block mb-2">Psychological Strategy</span>
-              <p className="text-sm text-slate-400">{step.psych_impact || "Analysis pending..."}</p>
+              <span className="text-[11px] font-black text-blue-500 uppercase block mb-2 tracking-widest">Psychological Strategy</span>
+              <p className="text-sm text-slate-400">{step.psych_impact || "N/A"}</p>
             </div>
             <div className="bg-black/40 p-6 rounded-[1.5rem] border border-white/5">
-              <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest block mb-2">Success Metric</span>
-              <p className="text-sm text-slate-400">{step.success_metric || "KPI calibrating..."}</p>
+              <span className="text-[11px] font-black text-emerald-500 uppercase block mb-2 tracking-widest">Success Metric</span>
+              <p className="text-sm text-slate-400">{step.success_metric || "KPI Pending"}</p>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -76,77 +59,76 @@ export default function App() {
   const [status, setStatus] = useState("System Idle");
   const reportRef = useRef();
 
+  // --- FIXED PDF LOGIC (Full Height) ---
   const downloadReport = async () => {
+    if (!ai) return;
     setStatus("Generating PDF...");
     const element = reportRef.current;
-    const canvas = await html2canvas(element, { 
-      backgroundColor: '#020617', 
-      scale: 2,
-      useCORS: true 
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`landalytics-audit-${new Date().getTime()}.pdf`);
-    setStatus("PDF Dispatched.");
+    
+    try {
+      const canvas = await html2canvas(element, { 
+        backgroundColor: '#020617', 
+        scale: 1.5, // Slightly lower scale to prevent memory crashes on long pages
+        useCORS: true,
+        height: element.scrollHeight, // Force capture of full length
+        windowHeight: element.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // If the report is longer than one A4 page, it will scale to fit one long page. 
+      // This ensures the Roadmap and Verdict are included.
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`landalytics-full-audit.pdf`);
+      setStatus("PDF Dispatched.");
+    } catch (err) {
+      console.error(err);
+      setStatus("PDF Generation Failed");
+    }
   };
 
   const runAudit = async () => {
     if (!url) return;
     const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "https://landalytics.onrender.com";
     setLoading(true); setScores(null); setAi(null); setStatus("Initiating Neural Capture...");
-
     try {
       const response = await fetch(`${API_BASE}/api/v1/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
       });
-
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop();
-
         for (const line of lines) {
           if (!line.trim()) continue;
           try {
             const data = JSON.parse(line);
-            if (data.type === "metrics") {
-              setScores(data.scores);
-              setStatus("Core Heuristics Loaded...");
-            }
-            if (data.type === "ai_narrative") {
-              setAi(data);
-              setLoading(false);
-              setStatus("Scan Complete.");
-            }
-          } catch (e) { console.warn("Syncing Data Fragment..."); }
+            if (data.type === "metrics") setScores(data.scores);
+            if (data.type === "ai_narrative") { setAi(data); setLoading(false); setStatus("Scan Complete."); }
+          } catch (e) { console.warn("Syncing..."); }
         }
       }
-    } catch (e) {
-      setStatus("Connection Error");
-      setLoading(false);
-    }
+    } catch (e) { setStatus("Neural Link Error"); setLoading(false); }
   };
 
   if (!scores && !loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center font-sans">
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
         <div className="w-full max-w-4xl space-y-12">
-          <h1 className="text-7xl md:text-9xl font-black italic text-white tracking-tighter leading-none uppercase">LANDA<span className="text-blue-600">LYTICS</span></h1>
+          <h1 className="text-7xl md:text-9xl font-black italic text-white tracking-tighter uppercase leading-none">LANDA<span className="text-blue-600">LYTICS</span></h1>
           <div className="flex flex-col md:flex-row bg-slate-900 border-2 border-slate-800 p-3 rounded-[3rem]">
             <input className="flex-1 bg-transparent px-8 py-4 text-white outline-none text-2xl font-bold uppercase placeholder:text-slate-700" placeholder="ENTER TARGET URL..." value={url} onChange={e => setUrl(e.target.value)} />
-            <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500 transition-all">SCAN SITE</button>
+            <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500">SCAN SITE</button>
           </div>
         </div>
       </div>
@@ -163,116 +145,95 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-300 font-sans pb-40">
-      <nav className="fixed top-0 w-full z-[100] bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 px-10 py-6 flex justify-between items-center">
-        <span className="text-2xl font-black italic text-white uppercase tracking-tighter">LANDALYTICS <span className="text-blue-600">ULTIMATE</span></span>
-        <div className="flex items-center gap-6">
-          {!loading && ai && (
-            <button onClick={downloadReport} className="text-[10px] font-black bg-white text-black px-4 py-2 rounded-full hover:bg-blue-600 hover:text-white transition-all uppercase tracking-widest">Download PDF</button>
-          )}
-          <span className="text-[10px] font-mono text-blue-500 tracking-[0.3em] uppercase animate-pulse">{status}</span>
+    <div className="min-h-screen bg-[#020617] text-slate-300 pb-40">
+      
+      {/* NAVIGATION - BOLD & BIG */}
+      <nav className="fixed top-0 w-full z-[100] bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 px-10 py-8 flex justify-between items-end">
+        <div>
+          <span className="text-3xl font-black italic text-white uppercase tracking-tighter">LANDALYTICS</span>
+          <p className="text-[10px] font-mono text-blue-500 tracking-[0.4em] uppercase animate-pulse mt-1">{status}</p>
+        </div>
+        <div className="flex items-center gap-12">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-3xl font-black italic text-white/30 hover:text-white transition-all uppercase tracking-tighter"
+          >
+            HOME
+          </button>
+          <button 
+            onClick={downloadReport} 
+            disabled={!ai} 
+            className={`text-3xl font-black italic uppercase tracking-tighter transition-all ${ai ? "text-blue-600 hover:text-blue-400" : "text-white/5 cursor-not-allowed"}`}
+          >
+            PDF DOWNLOAD
+          </button>
         </div>
       </nav>
 
-      <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-32 space-y-40 bg-[#020617]">
+      <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-48 space-y-40 bg-[#020617]">
         
-        {/* SECTION: CORE METRICS */}
+        {/* SECTION 1: CORE METRICS */}
         <section className="space-y-16">
           <h2 className="text-5xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Core Results</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <CoreMetric label="Conversion Intent" score={scores?.conversion_intent} colorClass={getScoreColor(scores?.conversion_intent)} />
-            <CoreMetric label="Trust Resonance" score={scores?.trust_resonance} colorClass={getScoreColor(scores?.trust_resonance)} />
-            <CoreMetric label="Mobile Readiness" score={scores?.mobile_readiness} colorClass={getScoreColor(scores?.mobile_readiness)} />
-            <CoreMetric label="Semantic Authority" score={scores?.semantic_authority} colorClass={getScoreColor(scores?.semantic_authority)} />
+            {Object.keys(scores || {}).map(k => <CoreMetric key={k} label={k.replace('_',' ')} score={scores[k]} colorClass={getScoreColor(scores[k])} />)}
           </div>
         </section>
 
-        {/* SECTION: 6-NODE GRID */}
+        {/* SECTION 2: DEEP SCAN */}
         <section className="space-y-16">
           <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Deep Node Scan</h3>
           <div className="grid md:grid-cols-3 gap-8">
-            {nodes.map((node, i) => (
+            {nodes.map((n, i) => (
               <div key={i} className="bg-slate-900/40 p-8 border border-white/5 rounded-[2.5rem] flex flex-col justify-between h-[280px]">
-                <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{node.t}</span>
-                    <span className={`text-3xl font-black italic ${getScoreColor(node.s)}`}>{node.s}%</span>
-                  </div>
-                  <p className="text-base font-bold text-slate-200 italic">"{node.d}"</p>
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{n.t}</span>
+                  <span className={`text-3xl font-black italic ${getScoreColor(n.s)}`}>{n.s}%</span>
                 </div>
+                <p className="text-lg font-bold text-slate-200 italic mb-4">"{n.d}"</p>
                 <div className="bg-white/5 h-2 w-full rounded-full overflow-hidden">
-                  <div className={`h-full ${getProgressColor(node.s)} transition-all duration-1000`} style={{width: `${node.s}%`}} />
+                  <div className={`h-full ${getProgressColor(n.s)}`} style={{width: `${n.s}%`}} />
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* SECTION: SWOT MATRIX */}
+        {/* SECTION 3: SWOT MATRIX */}
         <section className="space-y-16">
           <h3 className="text-4xl font-black italic text-white uppercase border-l-8 border-emerald-500 pl-8">Strategic Matrix</h3>
           <div className="grid md:grid-cols-2 gap-px bg-slate-800 rounded-[3rem] overflow-hidden border-2 border-slate-800 shadow-2xl">
-            <div className="p-12 bg-[#020617]">
-              <h4 className="text-emerald-400 font-black text-xs uppercase mb-8">Strengths</h4>
-              {(ai?.swot?.strengths || []).map((s, i) => (
-                <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{s.point || s.title}</p>
-                  <p className="text-slate-400 text-sm">{s.evidence || s.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] border-l border-slate-800">
-              <h4 className="text-red-400 font-black text-xs uppercase mb-8">Weaknesses</h4>
-              {(ai?.swot?.weaknesses || []).map((w, i) => (
-                <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{w.point || w.title}</p>
-                  <p className="text-slate-400 text-sm">{w.fix_suggestion || w.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] border-t border-slate-800">
-              <h4 className="text-blue-400 font-black text-xs uppercase mb-8">Opportunities</h4>
-              {(ai?.swot?.opportunities || []).map((o, i) => (
-                <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{o.point || o.title}</p>
-                  <p className="text-slate-400 text-sm">{o.potential_impact || o.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="p-12 bg-[#020617] border-t border-l border-slate-800">
-              <h4 className="text-amber-400 font-black text-xs uppercase mb-8">Threats</h4>
-              {(ai?.swot?.threats || []).map((t, i) => (
-                <div key={i} className="mb-8">
-                  <p className="text-white font-black text-xl mb-1">{t.point || t.title}</p>
-                  <p className="text-slate-400 text-sm">{t.mitigation_strategy || t.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION: ROADMAP */}
-        <section className="space-y-16">
-          <h3 className="text-5xl font-black italic text-white uppercase text-center tracking-tighter">Execution Roadmap</h3>
-          <div className="max-w-[900px] mx-auto space-y-8">
-            {(ai?.roadmap || [{},{},{},{}]).map((step, i) => (
-              <RoadmapStep key={i} step={step} index={i} />
+            {['strengths', 'weaknesses', 'opportunities', 'threats'].map(type => (
+              <div key={type} className="p-12 bg-[#020617]">
+                <h4 className={`font-black text-xs uppercase mb-8 ${type === 'strengths' ? 'text-emerald-400' : type === 'weaknesses' ? 'text-red-400' : type === 'opportunities' ? 'text-blue-400' : 'text-amber-400'}`}>{type}</h4>
+                {(ai?.swot?.[type] || []).map((s, i) => (
+                  <div key={i} className="mb-8">
+                    <p className="text-white font-black text-xl mb-1">{s.point || s.title}</p>
+                    <p className="text-slate-400 text-sm leading-relaxed">{s.evidence || s.fix_suggestion || s.potential_impact || s.mitigation_strategy || s.description}</p>
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
         </section>
 
-        {/* SECTION: FINAL VERDICT */}
-        <section className="bg-blue-600 p-20 rounded-[4rem] text-center relative border-4 border-white/10 shadow-2xl">
-          <h3 className="text-xs font-black text-white/50 uppercase tracking-widest mb-10">Executive Recommendation</h3>
-          <h2 className="text-7xl font-black italic text-white uppercase mb-10 tracking-tighter leading-none">
-            {ai?.final_verdict?.overall_readiness || "EVALUATING"}
-          </h2>
-          <div className="bg-black/30 p-10 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
-            <p className="text-3xl font-black text-white italic leading-tight uppercase tracking-tight">
-              "{ai?.final_verdict?.single_most_impactful_change || "Finalizing core directive..."}"
-            </p>
+        {/* SECTION 4: ROADMAP */}
+        <section className="space-y-16">
+          <h3 className="text-6xl font-black italic text-white uppercase text-center tracking-tighter">Execution Roadmap</h3>
+          <div className="max-w-[950px] mx-auto space-y-10">
+            {(ai?.roadmap || [{},{},{},{}]).map((s, i) => <RoadmapStep key={i} step={s} index={i} />)}
           </div>
         </section>
+
+        {/* SECTION 5: FINAL VERDICT */}
+        <section className="bg-blue-600 p-24 rounded-[4rem] text-center border-4 border-white/10 shadow-[0_0_60px_rgba(37,99,235,0.4)]">
+          <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.4em] mb-12">Executive Recommendation</h3>
+          <h2 className="text-8xl font-black italic text-white uppercase mb-12 tracking-tighter leading-none">{ai?.final_verdict?.overall_readiness || "EVALUATING"}</h2>
+          <div className="bg-black/30 p-12 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
+            <p className="text-4xl font-black text-white italic leading-tight uppercase">"{ai?.final_verdict?.single_most_impactful_change || "Finalizing core directive..."}"</p>
+          </div>
+        </section>
+
       </div>
     </div>
   );
