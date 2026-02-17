@@ -59,31 +59,25 @@ export default function App() {
   const [status, setStatus] = useState("System Idle");
   const reportRef = useRef();
 
-  // --- NAVIGATION HELPERS ---
   const goHome = () => {
-    setScores(null);
-    setAi(null);
-    setLoading(false);
-    setUrl('');
-    setStatus("System Idle");
+    setScores(null); setAi(null); setLoading(false); setUrl(''); setStatus("System Idle");
   };
 
-  // --- PDF MULTI-PAGE LOGIC ---
+  // --- OPTIMIZED MULTI-PAGE PDF (Slices to prevent lag) ---
   const downloadReport = async () => {
     if (!ai) return;
-    setStatus("Generating Multi-Page PDF...");
+    setStatus("Processing PDF Pages...");
     const element = reportRef.current;
     
     try {
       const canvas = await html2canvas(element, { 
         backgroundColor: '#020617', 
-        scale: 2,
+        scale: 1.5, // Lowered scale to fix browser lag 
         useCORS: true,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
+        logging: false
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Uses JPEG compression to save memory
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -96,31 +90,28 @@ export default function App() {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // First Page
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight * ratio);
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight * ratio);
       heightLeft -= canvasPageHeight;
 
-      // Loop for subsequent pages
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position * ratio, pdfWidth, imgHeight * ratio);
+        pdf.addImage(imgData, 'JPEG', 0, position * ratio, pdfWidth, imgHeight * ratio);
         heightLeft -= canvasPageHeight;
       }
 
       pdf.save(`landalytics-report.pdf`);
-      setStatus("Full Report Dispatched.");
+      setStatus("Download Complete.");
     } catch (err) {
       console.error(err);
-      setStatus("PDF Generation Failed");
+      setStatus("Engine Exhausted");
     }
   };
 
   const runAudit = async () => {
     if (!url) return;
-    // Uses the Environment Variable from your Render dashboard
     const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || "https://landalytics.onrender.com";
-    setLoading(true); setScores(null); setAi(null); setStatus("Initiating Neural Capture...");
+    setLoading(true); setScores(null); setAi(null); setStatus("Capturing Neurons...");
     
     try {
       const response = await fetch(`${API_BASE}/api/v1/analyze`, {
@@ -143,10 +134,10 @@ export default function App() {
             const data = JSON.parse(line);
             if (data.type === "metrics") setScores(data.scores);
             if (data.type === "ai_narrative") { setAi(data); setLoading(false); setStatus("Scan Complete."); }
-          } catch (e) { console.warn("Processing data..."); }
+          } catch (e) {}
         }
       }
-    } catch (e) { setStatus("Neural Link Error"); setLoading(false); }
+    } catch (e) { setStatus("Sync Lost"); setLoading(false); }
   };
 
   const nodes = [
@@ -161,11 +152,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 pb-40">
       
-      {/* NAVIGATION - BOLD & ALWAYS ACCESSIBLE */}
+      {/* FIXED NAVIGATION */}
       <nav className="fixed top-0 w-full z-[100] bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 px-10 py-8 flex justify-between items-end">
         <div>
           <span onClick={goHome} className="text-3xl font-black italic text-white uppercase tracking-tighter cursor-pointer">LANDALYTICS</span>
-          <p className="text-[10px] font-mono text-blue-500 tracking-[0.4em] uppercase animate-pulse mt-1">{status}</p>
+          <p className="text-[10px] font-mono text-blue-500 tracking-[0.4em] uppercase mt-1">{status}</p>
         </div>
         <div className="flex items-center gap-12">
           <button onClick={goHome} className="text-3xl font-black italic text-white hover:text-blue-500 transition-all uppercase tracking-tighter">HOME</button>
@@ -173,20 +164,21 @@ export default function App() {
         </div>
       </nav>
 
-      {/* SEARCH VIEW (HOME) */}
+      {/* SEARCH VIEW */}
       {(!scores && !loading) ? (
         <div className="min-h-screen flex items-center justify-center p-6 text-center">
           <div className="w-full max-w-4xl space-y-12">
             <h1 className="text-7xl md:text-9xl font-black italic text-white tracking-tighter uppercase leading-none">LANDA<span className="text-blue-600">LYTICS</span></h1>
             <div className="flex flex-col md:flex-row bg-slate-900 border-2 border-slate-800 p-3 rounded-[3rem]">
               <input className="flex-1 bg-transparent px-8 py-4 text-white outline-none text-2xl font-bold uppercase placeholder:text-slate-700" placeholder="ENTER TARGET URL..." value={url} onChange={e => setUrl(e.target.value)} />
-              <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500">SCAN SITE</button>
+              <button onClick={runAudit} className="bg-blue-600 px-12 py-5 rounded-[2.5rem] font-black text-white text-xl hover:bg-blue-500 transition-all">SCAN SITE</button>
             </div>
           </div>
         </div>
       ) : (
-        /* REPORT VIEW */
+        /* AUDIT REPORT VIEW */
         <div ref={reportRef} className="max-w-[1200px] mx-auto p-10 pt-48 space-y-40 bg-[#020617]">
+          
           <section className="space-y-16">
             <h2 className="text-5xl font-black italic text-white uppercase border-l-8 border-blue-600 pl-8">Core Results</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -236,8 +228,8 @@ export default function App() {
             </div>
           </section>
 
-          <section className="bg-blue-600 p-24 rounded-[4rem] text-center border-4 border-white/10 shadow-[0_0_60px_rgba(37,99,235,0.4)]">
-            <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.4em] mb-12">Executive Recommendation</h3>
+          <section className="bg-blue-600 p-24 rounded-[4rem] text-center border-4 border-white/10 shadow-2xl">
+            <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.4em] mb-12">Final Directive</h3>
             <h2 className="text-8xl font-black italic text-white uppercase mb-12 tracking-tighter leading-none">{ai?.final_verdict?.overall_readiness || "EVALUATING"}</h2>
             <div className="bg-black/30 p-12 rounded-[2.5rem] border border-white/20 max-w-4xl mx-auto backdrop-blur-md">
               <p className="text-4xl font-black text-white italic leading-tight uppercase">"{ai?.final_verdict?.single_most_impactful_change || "Finalizing core directive..."}"</p>
