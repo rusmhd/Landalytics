@@ -492,7 +492,7 @@ const HomePage = ({ onScanComplete }) => {
     setLoading(true);
     setStatus('Initiating Neural Capture');
 
-    const API_BASE = (typeof import !== 'undefined' && typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL?.replace(/\/$/, '')) || 'https://landalytics.onrender.com';
+    const API_BASE = (import.meta.env?.VITE_API_URL?.replace(/\/$/, '')) || 'https://landalytics.onrender.com';
 
     let scores = null, ai = null;
 
