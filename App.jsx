@@ -488,7 +488,13 @@ const HomePage = ({ onScanComplete }) => {
     setLoading(true);
     setStatus('Initiating Neural Capture');
 
-    const API_BASE = (import.meta.env?.VITE_API_URL?.replace(/\/$/, '')) || 'https://landalytics.onrender.com';
+    const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+
+    if (!API_BASE) {
+      setError('VITE_API_URL is not set. Add it in your Render frontend environment variables.');
+      setLoading(false);
+      return;
+    }
 
     let scores = null, ai = null;
 
@@ -498,7 +504,7 @@ const HomePage = ({ onScanComplete }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmed }),
       });
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      if (!res.ok) throw new Error(`Backend error ${res.status} at ${API_BASE}`);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -540,8 +546,8 @@ const HomePage = ({ onScanComplete }) => {
     accent: { color: '#2563EB' },
     sub: { fontSize: 14, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', lineHeight: 1.7, margin: '20px 0 48px' },
     inputWrap: { display: 'flex', flexDirection: 'column', gap: 12 },
-    bar: { display: 'flex', background: '#0F1929', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 100, padding: '6px 6px 6px 24px', gap: 8, transition: 'border-color 0.2s', boxShadow: '0 0 40px rgba(0,0,0,0.5)' },
-    input: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, color: '#FFFFFF', fontFamily: 'monospace' },
+    bar: { display: 'flex', background: '#0F1929', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 100, padding: '6px 6px 6px 24px', gap: 8, transition: 'border-color 0.2s', boxShadow: '0 0 40px rgba(0,0,0,0.5)' },
+    input: { flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, color: '#FFFFFF', fontFamily: 'monospace', caretColor: '#2563EB' },
     btn: { background: '#2563EB', border: 'none', borderRadius: 100, padding: '14px 32px', color: '#FFFFFF', fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 0 30px rgba(37,99,235,0.4)' },
     err: { color: '#EF4444', fontSize: 12, fontFamily: 'monospace', textAlign: 'left', paddingLeft: 20 },
     stats: { display: 'flex', justifyContent: 'center', gap: 48, marginTop: 48 },
