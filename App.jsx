@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getScoreColor = (score) => {
@@ -179,11 +179,11 @@ const generatePDF = async (data, url) => {
     pdf.rect(x, y, w, h, 'F');
   };
 
-  const drawBorderRect = (x, y, w, h, color, radius = 3) => {
+  const drawBorderRect = (x, y, w, h, color) => {
     const [r, g, b] = hex2rgb(color);
     pdf.setDrawColor(r, g, b);
     pdf.setLineWidth(0.3);
-    pdf.roundedRect(x, y, w, h, radius, radius, 'S');
+    pdf.rect(x, y, w, h, 'S');
   };
 
   const drawCard = (x, y, w, h, bgColor = CARD) => {
@@ -207,7 +207,8 @@ const generatePDF = async (data, url) => {
   pdf.text(now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(), W - M, 14, { align: 'right' });
 
   // Divider
-  pdf.setDrawColor(...hex2rgb('#1E2D45'));
+  const [dc1, dc2, dc3] = hex2rgb('#1E2D45');
+  pdf.setDrawColor(dc1, dc2, dc3);
   pdf.setLineWidth(0.3);
   pdf.line(M, 18, W - M, 18);
 
@@ -320,7 +321,7 @@ const generatePDF = async (data, url) => {
   pdf.text('LANDALYTICS ULTIMATE  •  AI CONVERSION AUDIT', M, 14);
   setFont(7, 'normal', '#334155');
   pdf.text('STRATEGIC ANALYSIS', W - M, 14, { align: 'right' });
-  pdf.setDrawColor(...hex2rgb('#1E2D45'));
+  pdf.setDrawColor(dc1, dc2, dc3);
   pdf.setLineWidth(0.3);
   pdf.line(M, 18, W - M, 18);
 
@@ -348,15 +349,10 @@ const generatePDF = async (data, url) => {
 
       drawCard(x, y, sqw, sqh);
 
-      // Title bar
+      // Title bar - use a darkened version of the color instead of opacity
       const [cr, cg, cb] = hex2rgb(q.color);
-      pdf.setFillColor(cr, cg, cb, 0.15);
-      fillRect(x, y, sqw, 9, q.color);
-      pdf.setFillColor(cr, cg, cb);
-      // semi-transparent overlay
-      pdf.setGState && pdf.setGState(new pdf.GState({ opacity: 0.15 }));
-      fillRect(x, y, sqw, 9, q.color);
-      pdf.setGState && pdf.setGState(new pdf.GState({ opacity: 1 }));
+      pdf.setFillColor(Math.floor(cr * 0.25), Math.floor(cg * 0.25), Math.floor(cb * 0.25));
+      pdf.rect(x, y, sqw, 9, 'F');
 
       setFont(7, 'bold', q.color);
       pdf.text(q.title, x + 5, y + 6);
@@ -421,7 +417,7 @@ const generatePDF = async (data, url) => {
   const verdictY = 228;
   const [ar, ag, ab] = hex2rgb(ACCENT);
   pdf.setFillColor(ar, ag, ab);
-  pdf.roundedRect(M, verdictY, CW, 46, 4, 4, 'F');
+  pdf.rect(M, verdictY, CW, 46, 'F');
 
   setFont(7, 'bold', 'rgba(255,255,255,0.5)');
   pdf.setTextColor(255, 255, 255, 0.5);
@@ -600,6 +596,8 @@ const ReportPage = ({ scores, ai, url, onHome }) => {
       setPdfStatus('SAVED ✓');
       setTimeout(() => setPdfStatus('PDF EXPORT'), 2500);
     } catch (e) {
+      console.error('PDF generation failed:', e);
+      alert('PDF Error: ' + (e?.message || String(e)));
       setPdfStatus('ERROR');
       setTimeout(() => setPdfStatus('PDF EXPORT'), 2500);
     }
