@@ -153,10 +153,21 @@ const generatePDF = async (data, url) => {
   const BORDER = '#1E2D45';
 
   const hex2rgb = (hex) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return [r, g, b];
+    if (!hex || typeof hex !== 'string') return [255, 255, 255];
+    const clean = hex.replace('#', '');
+    if (clean.length === 3) {
+      return [
+        parseInt(clean[0] + clean[0], 16),
+        parseInt(clean[1] + clean[1], 16),
+        parseInt(clean[2] + clean[2], 16),
+      ];
+    }
+    if (clean.length !== 6) return [255, 255, 255];
+    return [
+      parseInt(clean.slice(0, 2), 16),
+      parseInt(clean.slice(2, 4), 16),
+      parseInt(clean.slice(4, 6), 16),
+    ];
   };
 
   const scoreColorHex = (score) => {
@@ -419,8 +430,6 @@ const generatePDF = async (data, url) => {
   pdf.setFillColor(ar, ag, ab);
   pdf.rect(M, verdictY, CW, 46, 'F');
 
-  setFont(7, 'bold', 'rgba(255,255,255,0.5)');
-  pdf.setTextColor(255, 255, 255, 0.5);
   setFont(7, 'bold', '#FFFFFF');
   pdf.text('EXECUTIVE RECOMMENDATION', M + CW / 2, verdictY + 10, { align: 'center' });
 
