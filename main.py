@@ -60,7 +60,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Cache-Control"] = "no-store"
     # Never expose server internals
-    response.headers.pop("Server", None)
+    if "server" in response.headers:
+        del response.headers["server"]
     return response
 
 # ---------------------------------------------------------------------------
