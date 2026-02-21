@@ -31,19 +31,15 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS — restrict to known frontend origins only (OWASP: A05 Security Misconfig)
+# CORS — always allow the known frontend, plus any extras from env var
 # ---------------------------------------------------------------------------
-ALLOWED_ORIGINS = [
-    o.strip() for o in os.environ.get(
-        "ALLOWED_ORIGINS",
-        "https://landalytics-1.onrender.com"  # fallback for local dev
-    ).split(",") if o.strip()
-]
+_env_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+ALLOWED_ORIGINS = list(set(["https://landalytics-1.onrender.com"] + _env_origins))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["POST"],           # only what we actually use
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
     allow_credentials=False,
 )
