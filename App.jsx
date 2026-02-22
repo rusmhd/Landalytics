@@ -167,7 +167,7 @@ const LoadingScreen = ({ status }) => {
 
 const HomePage = ({ onScanComplete }) => {
   const [url, setUrl] = useState('');
-  const [goal, setGoal] = useState('lead_generation');
+  const [goal, setGoal] = useState('cro');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
