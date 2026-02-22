@@ -114,12 +114,10 @@ def get_client_ip(request: Request) -> str:
 
 # Allowed goal values — whitelist approach, reject anything else
 VALID_GOALS = {
-    "ab_testing", "cart_abandonment", "cro", "customer_data_platform",
-    "customer_engagement", "cx_optimization", "customer_retention", "feature_rollout",
-    "grow_traffic", "landing_page_optimization", "mobile_ab_testing", "multivariate_testing",
-    "push_notifications", "server_side_testing", "session_recording", "usability_testing",
-    "visitor_behavior", "form_analytics", "heatmaps", "website_optimization",
-    "personalization", "website_redesign", "website_surveys",
+    "ab_testing", "cart_abandonment", "cro", "customer_engagement",
+    "cx_optimization", "customer_retention", "feature_rollout", "grow_traffic",
+    "landing_page_optimization", "multivariate_testing", "website_optimization",
+    "personalization", "website_redesign",
 }
 
 # Blocked private/local network ranges — prevent SSRF (OWASP: A10)
@@ -216,29 +214,19 @@ groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 # Goal metadata — 23 goals covering the full CRO/marketing spectrum
 # ---------------------------------------------------------------------------
 GOAL_LABELS = {
-    "ab_testing":               "A/B Testing",
-    "cart_abandonment":         "Cart Abandonment",
-    "cro":                      "Conversion Rate Optimization",
-    "customer_data_platform":   "Customer Data Platform",
-    "customer_engagement":      "Customer Engagement",
-    "cx_optimization":          "Customer Experience Optimization",
-    "customer_retention":       "Customer Retention",
-    "feature_rollout":          "Feature Rollout",
-    "grow_traffic":             "Grow Website Traffic",
-    "landing_page_optimization":"Landing Page Optimization",
-    "mobile_ab_testing":        "Mobile App A/B Testing",
-    "multivariate_testing":     "Multivariate Testing",
-    "push_notifications":       "Push Notifications",
-    "server_side_testing":      "Server-Side Testing",
-    "session_recording":        "Session Recording",
-    "usability_testing":        "Usability Testing",
-    "visitor_behavior":         "Visitor Behavior Analysis",
-    "form_analytics":           "Web Form Analytics",
-    "heatmaps":                 "Website Heatmaps",
-    "website_optimization":     "Website Optimization",
-    "personalization":          "Website Personalization",
-    "website_redesign":         "Website Redesign",
-    "website_surveys":          "Website Surveys",
+    "ab_testing":                "A/B Testing",
+    "cart_abandonment":          "Cart Abandonment",
+    "cro":                       "Conversion Rate Optimization",
+    "customer_engagement":       "Customer Engagement",
+    "cx_optimization":           "Customer Experience Optimization",
+    "customer_retention":        "Customer Retention",
+    "feature_rollout":           "Feature Rollout",
+    "grow_traffic":              "Grow Website Traffic",
+    "landing_page_optimization": "Landing Page Optimization",
+    "multivariate_testing":      "Multivariate Testing",
+    "website_optimization":      "Website Optimization",
+    "personalization":           "Website Personalization",
+    "website_redesign":          "Website Redesign",
 }
 
 GOAL_CONTEXT = {
@@ -536,6 +524,232 @@ def extract_signals(markdown: str) -> dict:
         "viewport_content": viewport_content,
         "page_text": text_lower[:2000],
     }
+
+# ---------------------------------------------------------------------------
+# Goal-specific score weights
+# Multipliers applied after base scoring to emphasise signals that matter
+# most for each goal. Values > 1.0 boost, < 1.0 downweight.
+# Keys match the scores dict — any score not listed keeps its base value.
+# ---------------------------------------------------------------------------
+GOAL_WEIGHTS = {
+    "ab_testing": {
+        "conversion_intent": 1.4,  # CTAs are primary test targets
+        "readability":        1.3,  # clear copy is testable copy
+        "multimedia":         1.2,  # visual elements are test candidates
+        "content_depth":      1.1,
+        "schema_markup":      0.6,  # irrelevant to A/B testing
+    },
+    "cart_abandonment": {
+        "trust_resonance":    1.5,  # trust is #1 cart abandonment driver
+        "conversion_intent":  1.4,  # checkout CTAs
+        "readability":        1.2,  # clear pricing/product copy
+        "internal_links":     1.1,
+        "heading_hierarchy":  0.7,
+        "schema_markup":      0.6,
+    },
+    "cro": {
+        "conversion_intent":  1.5,  # the whole point
+        "trust_resonance":    1.3,
+        "readability":        1.2,
+        "search_intent":      1.2,
+        "content_depth":      1.1,
+        "schema_markup":      0.8,
+    },
+    "customer_data_platform": {
+        "form_analytics":     1.5,  # data capture is the goal (if tracked)
+        "trust_resonance":    1.4,  # privacy/GDPR trust
+        "https_ssl":          1.3,  # security critical for data collection
+        "conversion_intent":  1.2,
+        "multimedia":         0.6,
+        "heading_hierarchy":  0.7,
+    },
+    "customer_engagement": {
+        "content_depth":      1.5,  # depth keeps users engaged
+        "readability":        1.4,  # readable = engaging
+        "multimedia":         1.4,  # visual content drives engagement
+        "internal_links":     1.3,  # keeps users exploring
+        "search_intent":      1.1,
+        "https_ssl":          0.7,
+    },
+    "cx_optimization": {
+        "readability":        1.5,  # clear UX copy is core CX
+        "mobile_readiness":   1.4,  # CX spans all devices
+        "internal_links":     1.3,  # navigation is CX
+        "conversion_intent":  1.2,
+        "trust_resonance":    1.2,
+        "schema_markup":      0.6,
+    },
+    "customer_retention": {
+        "trust_resonance":    1.5,  # existing customers need reassurance
+        "content_depth":      1.3,  # value-rich content retains
+        "search_intent":      1.3,  # retention-specific messaging
+        "readability":        1.2,
+        "conversion_intent":  1.1,
+        "title_tag":          0.7,
+        "schema_markup":      0.5,
+    },
+    "feature_rollout": {
+        "content_depth":      1.4,  # feature explanation needs depth
+        "readability":        1.4,  # clear feature communication
+        "heading_hierarchy":  1.3,  # structured feature breakdown
+        "multimedia":         1.3,  # screenshots/demos
+        "conversion_intent":  1.2,  # adoption CTA
+        "https_ssl":          0.7,
+        "schema_markup":      0.6,
+    },
+    "grow_traffic": {
+        "semantic_authority": 1.5,  # SEO backbone
+        "heading_hierarchy":  1.4,  # H1-H3 critical for SEO
+        "meta_description":   1.4,  # CTR from SERPs
+        "content_depth":      1.4,  # long-form ranks better
+        "keyword_placement":  1.4,  # on-page SEO
+        "title_tag":          1.3,
+        "schema_markup":      1.3,  # rich results
+        "https_ssl":          1.2,
+        "conversion_intent":  0.5,  # not the focus
+        "trust_resonance":    0.7,
+    },
+    "landing_page_optimization": {
+        "conversion_intent":  1.5,
+        "trust_resonance":    1.4,
+        "readability":        1.3,
+        "search_intent":      1.3,
+        "multimedia":         1.2,
+        "schema_markup":      0.6,
+        "internal_links":     0.7,
+    },
+    "mobile_ab_testing": {
+        "mobile_readiness":   1.5,  # mobile is everything here
+        "conversion_intent":  1.3,  # mobile CTAs
+        "readability":        1.3,  # mobile readability
+        "multimedia":         1.2,  # mobile visuals
+        "image_alt_text":     1.1,
+        "schema_markup":      0.5,
+        "content_depth":      0.7,
+    },
+    "multivariate_testing": {
+        "conversion_intent":  1.4,
+        "content_depth":      1.3,  # more elements = more test candidates
+        "multimedia":         1.3,
+        "readability":        1.2,
+        "heading_hierarchy":  1.2,
+        "schema_markup":      0.5,
+    },
+    "push_notifications": {
+        "conversion_intent":  1.4,  # opt-in CTA
+        "trust_resonance":    1.4,  # trust needed for permission
+        "readability":        1.3,  # clear value prop for subscribing
+        "https_ssl":          1.3,  # required for push
+        "content_depth":      0.7,
+        "schema_markup":      0.5,
+        "keyword_placement":  0.6,
+    },
+    "server_side_testing": {
+        "conversion_intent":  1.3,
+        "content_depth":      1.3,
+        "search_intent":      1.2,
+        "readability":        1.2,
+        "schema_markup":      0.6,
+        "image_alt_text":     0.7,
+    },
+    "session_recording": {
+        "internal_links":     1.5,  # navigation paths are recorded
+        "readability":        1.4,  # scroll/reading patterns
+        "content_depth":      1.3,  # long pages = more session data
+        "multimedia":         1.2,  # interaction with visuals
+        "conversion_intent":  1.2,
+        "schema_markup":      0.5,
+        "meta_description":   0.6,
+    },
+    "usability_testing": {
+        "readability":        1.5,  # usability = clarity
+        "internal_links":     1.4,  # navigation discoverability
+        "heading_hierarchy":  1.3,  # structure aids usability
+        "conversion_intent":  1.2,  # task completion
+        "mobile_readiness":   1.2,
+        "schema_markup":      0.5,
+        "keyword_placement":  0.6,
+    },
+    "visitor_behavior": {
+        "content_depth":      1.5,  # behaviour varies with content length
+        "internal_links":     1.4,  # click paths
+        "multimedia":         1.3,  # visual interaction
+        "heading_hierarchy":  1.2,  # scroll anchors
+        "readability":        1.2,
+        "schema_markup":      0.5,
+        "https_ssl":          0.7,
+    },
+    "form_analytics": {
+        "conversion_intent":  1.5,  # form completion is the goal
+        "readability":        1.4,  # form label clarity
+        "trust_resonance":    1.3,  # trust reduces form abandonment
+        "mobile_readiness":   1.2,  # mobile form UX
+        "content_depth":      0.7,
+        "multimedia":         0.6,
+        "schema_markup":      0.5,
+    },
+    "heatmaps": {
+        "multimedia":         1.5,  # visual elements attract clicks
+        "internal_links":     1.4,  # link click patterns
+        "content_depth":      1.3,  # scroll depth heatmaps
+        "heading_hierarchy":  1.2,  # section anchors
+        "conversion_intent":  1.2,  # CTA click zones
+        "schema_markup":      0.4,
+        "keyword_placement":  0.6,
+        "meta_description":   0.5,
+    },
+    "website_optimization": {
+        "mobile_readiness":   1.4,  # Core Web Vitals
+        "semantic_authority": 1.3,
+        "content_depth":      1.2,
+        "https_ssl":          1.2,
+        "readability":        1.2,
+        "heading_hierarchy":  1.1,
+        "schema_markup":      1.1,
+    },
+    "personalization": {
+        "search_intent":      1.5,  # intent = personalization signal
+        "content_depth":      1.3,  # rich content to personalize
+        "conversion_intent":  1.3,
+        "trust_resonance":    1.2,
+        "multimedia":         1.2,
+        "schema_markup":      0.6,
+        "keyword_placement":  0.7,
+    },
+    "website_redesign": {
+        "mobile_readiness":   1.5,  # redesign must be mobile-first
+        "readability":        1.4,  # visual/UX clarity
+        "heading_hierarchy":  1.3,  # structural foundation
+        "multimedia":         1.3,  # visual design signals
+        "conversion_intent":  1.2,
+        "trust_resonance":    1.2,
+        "content_depth":      1.1,
+    },
+    "website_surveys": {
+        "conversion_intent":  1.5,  # survey opt-in is a conversion
+        "trust_resonance":    1.4,  # trust encourages feedback
+        "readability":        1.3,  # clear survey prompts
+        "internal_links":     1.1,
+        "schema_markup":      0.5,
+        "keyword_placement":  0.5,
+        "content_depth":      0.8,
+    },
+}
+
+def apply_goal_weights(scores: dict, goal: str) -> dict:
+    """
+    Apply goal-specific multipliers to base scores.
+    Boosts signals that matter most for the goal, downweights irrelevant ones.
+    page_speed is never weighted — it is an objective measurement.
+    """
+    weights = GOAL_WEIGHTS.get(goal, {})
+    if not weights:
+        return scores
+    weighted = dict(scores)
+    for key, multiplier in weights.items():
+        if key in weighted and key != "page_speed":
+            weighted[key] = min(100, max(5, int(weighted[key] * multiplier)))
+    return weighted
 
 # ---------------------------------------------------------------------------
 # Scoring functions
@@ -897,6 +1111,9 @@ async def analyze_site(request: Request, body: AuditRequest):
     }
     if page_speed is not None:
         scores["page_speed"] = page_speed
+
+    # Apply goal-specific weights — boosts signals most relevant to the goal
+    scores = apply_goal_weights(scores, goal)
 
     async def stream():
         try:
