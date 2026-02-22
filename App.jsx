@@ -235,12 +235,12 @@ const HomePage = ({ onScanComplete }) => {
 
 const ReportPage = ({ scores, ai, url, goal, onHome }) => {
   const nodes = [
-    { t: 'Conversion Intent',  s: scores?.conversion_intent  || 0, d: (scores?.conversion_intent  ||0)>=65 ? 'Strong conversion signals detected'  : 'Conversion signals need improvement' },
-    { t: 'Trust Resonance',    s: scores?.trust_resonance    || 0, d: (scores?.trust_resonance    ||0)>=65 ? 'Authority signals present'            : 'Trust indicators below threshold' },
-    { t: 'Mobile Readiness',   s: scores?.mobile_readiness   || 0, d: (scores?.mobile_readiness   ||0)>=65 ? 'Mobile viewport configured'           : 'Mobile optimization required' },
-    { t: 'Semantic Authority', s: scores?.semantic_authority || 0, d: (scores?.semantic_authority ||0)>=65 ? 'Heading hierarchy intact'             : 'Semantic structure needs work' },
-    { t: 'Page Speed',         s: scores?.page_speed         || 0, d: (scores?.page_speed         ||0)>=65 ? 'Performance score is healthy'         : 'Page speed needs optimization' },
-    { t: 'Social Proof Layer', s: Math.max(0,(scores?.trust_resonance||0)-5), d: 'Authority-signal proximity scan' },
+    { t: 'HTTPS / SSL',        s: scores?.https_ssl        || 0, d: (scores?.https_ssl        ||0)>=65 ? 'Secure connection confirmed'          : 'SSL certificate not detected' },
+    { t: 'Title Tag Quality',  s: scores?.title_tag        || 0, d: (scores?.title_tag        ||0)>=65 ? 'Title tag well optimised'             : 'Title tag needs improvement' },
+    { t: 'H1–H3 Hierarchy',    s: scores?.heading_hierarchy|| 0, d: (scores?.heading_hierarchy||0)>=65 ? 'Heading structure is solid'           : 'Heading hierarchy is weak' },
+    { t: 'Content Depth',      s: scores?.content_depth    || 0, d: (scores?.content_depth    ||0)>=65 ? 'Content length is sufficient'         : 'Content too thin for authority' },
+    { t: 'Schema Markup',      s: scores?.schema_markup    || 0, d: (scores?.schema_markup    ||0)>=65 ? 'Structured data detected'             : 'No structured data found' },
+    { t: 'Readability',        s: scores?.readability      || 0, d: (scores?.readability      ||0)>=65 ? 'Content is clear and scannable'       : 'Readability needs improvement' },
   ];
   const vals = Object.values(scores || {});
   const avg = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
