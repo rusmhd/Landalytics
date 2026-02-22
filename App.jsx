@@ -235,12 +235,18 @@ const HomePage = ({ onScanComplete }) => {
 
 const ReportPage = ({ scores, ai, url, goal, onHome }) => {
   const nodes = [
-    { t: 'HTTPS / SSL',        s: scores?.https_ssl        || 0, d: (scores?.https_ssl        ||0)>=65 ? 'Secure connection confirmed'          : 'SSL certificate not detected' },
-    { t: 'Title Tag Quality',  s: scores?.title_tag        || 0, d: (scores?.title_tag        ||0)>=65 ? 'Title tag well optimised'             : 'Title tag needs improvement' },
-    { t: 'H1–H3 Hierarchy',    s: scores?.heading_hierarchy|| 0, d: (scores?.heading_hierarchy||0)>=65 ? 'Heading structure is solid'           : 'Heading hierarchy is weak' },
-    { t: 'Content Depth',      s: scores?.content_depth    || 0, d: (scores?.content_depth    ||0)>=65 ? 'Content length is sufficient'         : 'Content too thin for authority' },
-    { t: 'Schema Markup',      s: scores?.schema_markup    || 0, d: (scores?.schema_markup    ||0)>=65 ? 'Structured data detected'             : 'No structured data found' },
-    { t: 'Readability',        s: scores?.readability      || 0, d: (scores?.readability      ||0)>=65 ? 'Content is clear and scannable'       : 'Readability needs improvement' },
+    { t: 'HTTPS / SSL',         s: scores?.https_ssl         || 0, d: (scores?.https_ssl         ||0)>=65 ? 'Secure connection confirmed'        : 'SSL certificate not detected' },
+    { t: 'Title Tag Quality',   s: scores?.title_tag         || 0, d: (scores?.title_tag         ||0)>=65 ? 'Title tag well optimised'           : 'Title tag needs improvement' },
+    { t: 'H1–H3 Hierarchy',     s: scores?.heading_hierarchy || 0, d: (scores?.heading_hierarchy ||0)>=65 ? 'Heading structure is solid'         : 'Heading hierarchy is weak' },
+    { t: 'Content Depth',       s: scores?.content_depth     || 0, d: (scores?.content_depth     ||0)>=65 ? 'Content length is sufficient'       : 'Content too thin for authority' },
+    { t: 'Schema Markup',       s: scores?.schema_markup     || 0, d: (scores?.schema_markup     ||0)>=65 ? 'Structured data detected'           : 'No structured data found' },
+    { t: 'Readability',         s: scores?.readability       || 0, d: (scores?.readability       ||0)>=65 ? 'Content is clear and scannable'     : 'Readability needs improvement' },
+    { t: 'Meta Description',    s: scores?.meta_description  || 0, d: (scores?.meta_description  ||0)>=65 ? 'Meta description is optimised'      : 'Meta description needs work' },
+    { t: 'Image Alt Text',      s: scores?.image_alt_text    || 0, d: (scores?.image_alt_text    ||0)>=65 ? 'Good alt text coverage'             : 'Alt text coverage is low' },
+    { t: 'Internal Links',      s: scores?.internal_links    || 0, d: (scores?.internal_links    ||0)>=65 ? 'Link structure is healthy'          : 'Internal linking needs work' },
+    { t: 'Keyword Placement',   s: scores?.keyword_placement || 0, d: (scores?.keyword_placement ||0)>=65 ? 'Keywords well positioned'           : 'Keyword placement needs work' },
+    { t: 'Multimedia Usage',    s: scores?.multimedia        || 0, d: (scores?.multimedia        ||0)>=65 ? 'Good visual content mix'            : 'Add more visual content' },
+    { t: 'Search Intent Match', s: scores?.search_intent     || 0, d: (scores?.search_intent     ||0)>=65 ? 'Content matches user intent'        : 'Intent alignment needs work' },
   ];
   const vals = Object.values(scores || {});
   const avg = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
@@ -291,7 +297,7 @@ const ReportPage = ({ scores, ai, url, goal, onHome }) => {
 
         <div style={{ marginBottom: 80 }}>
           <div style={SL}><span>02 — Deep Node Scan</span><div style={LL} /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {nodes.map((n,i) => <NodeBar key={i} label={n.t} score={n.s} description={n.d} />)}
           </div>
         </div>
