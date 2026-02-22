@@ -6,41 +6,26 @@ const getScoreBg = (s) => s >= 85 ? 'rgba(16,185,129,0.08)' : s >= 65 ? 'rgba(59
 
 const GOAL_GROUPS = [
   {
-    group: 'Testing & Optimization',
+    group: 'Optimization',
     goals: [
-      { value: 'ab_testing',          label: 'A/B Testing',                icon: '🔬' },
-      { value: 'multivariate_testing',label: 'Multivariate Testing',       icon: '🧪' },
-      { value: 'mobile_ab_testing',   label: 'Mobile App A/B Testing',     icon: '📱' },
-      { value: 'server_side_testing', label: 'Server-Side Testing',        icon: '⚙️' },
-      { value: 'cro',                 label: 'Conversion Rate Optimization',icon: '📈' },
-      { value: 'landing_page_optimization', label: 'Landing Page Optimization', icon: '🎯' },
-      { value: 'website_optimization',label: 'Website Optimization',       icon: '🛠️' },
-      { value: 'website_redesign',    label: 'Website Redesign',           icon: '🎨' },
+      { value: 'cro',                       label: 'Conversion Rate Optimization', icon: '📈' },
+      { value: 'landing_page_optimization', label: 'Landing Page Optimization',    icon: '🎯' },
+      { value: 'website_optimization',      label: 'Website Optimization',         icon: '🛠️' },
+      { value: 'website_redesign',          label: 'Website Redesign',             icon: '🎨' },
+      { value: 'ab_testing',                label: 'A/B Testing',                  icon: '🔬' },
+      { value: 'multivariate_testing',      label: 'Multivariate Testing',         icon: '🧪' },
+      { value: 'personalization',           label: 'Website Personalization',      icon: '✨' },
     ],
   },
   {
-    group: 'Customer & Behavior',
+    group: 'Growth & Retention',
     goals: [
-      { value: 'visitor_behavior',    label: 'Visitor Behavior Analysis',  icon: '👁️' },
-      { value: 'session_recording',   label: 'Session Recording',          icon: '🎥' },
-      { value: 'heatmaps',            label: 'Website Heatmaps',           icon: '🔥' },
-      { value: 'usability_testing',   label: 'Usability Testing',          icon: '🖱️' },
-      { value: 'customer_engagement', label: 'Customer Engagement',        icon: '💬' },
-      { value: 'cx_optimization',     label: 'Customer Experience Optimization', icon: '⭐' },
-      { value: 'customer_retention',  label: 'Customer Retention',         icon: '🔄' },
-      { value: 'personalization',     label: 'Website Personalization',    icon: '✨' },
-    ],
-  },
-  {
-    group: 'Data & Analytics',
-    goals: [
-      { value: 'form_analytics',      label: 'Web Form Analytics',         icon: '📋' },
-      { value: 'website_surveys',     label: 'Website Surveys',            icon: '📊' },
-      { value: 'customer_data_platform', label: 'Customer Data Platform',  icon: '🗄️' },
-      { value: 'cart_abandonment',    label: 'Cart Abandonment',           icon: '🛒' },
-      { value: 'push_notifications',  label: 'Push Notifications',         icon: '🔔' },
-      { value: 'grow_traffic',        label: 'Grow Website Traffic',       icon: '🚀' },
-      { value: 'feature_rollout',     label: 'Feature Rollout',            icon: '🚢' },
+      { value: 'grow_traffic',       label: 'Grow Website Traffic',              icon: '🚀' },
+      { value: 'customer_engagement',label: 'Customer Engagement',               icon: '💬' },
+      { value: 'cx_optimization',    label: 'Customer Experience Optimization',  icon: '⭐' },
+      { value: 'customer_retention', label: 'Customer Retention',                icon: '🔄' },
+      { value: 'cart_abandonment',   label: 'Cart Abandonment',                  icon: '🛒' },
+      { value: 'feature_rollout',    label: 'Feature Rollout',                   icon: '🚢' },
     ],
   },
 ];
@@ -165,6 +150,93 @@ const LoadingScreen = ({ status }) => {
   );
 };
 
+const GoalSelector = ({ goal, setGoal }) => {
+  const [open, setOpen] = useState(false);
+  const selected = GOALS.find(g => g.value === goal) || GOALS[0];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', width: '100%' }}>
+      <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Select Audit Goal</span>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 520 }}>
+        {/* Trigger button */}
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            width: '100%', padding: '13px 18px',
+            background: '#0A1628', border: `1px solid ${open ? 'rgba(37,99,235,0.6)' : 'rgba(37,99,235,0.2)'}`,
+            borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 10,
+            boxShadow: open ? '0 0 20px rgba(37,99,235,0.15)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>{selected.icon}</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selected.label}</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>
+                {GOAL_GROUPS.find(g => g.goals.some(gl => gl.value === goal))?.group || ''}
+              </div>
+            </div>
+          </div>
+          <span style={{ color: '#2563EB', fontSize: 10, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+        </button>
+
+        {/* Dropdown panel */}
+        {open && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 50,
+            background: '#0A1628', border: '1px solid rgba(37,99,235,0.25)',
+            borderRadius: 16, overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,99,235,0.1)',
+          }}>
+            {GOAL_GROUPS.map((group, gi) => (
+              <div key={group.group}>
+                {/* Group header */}
+                <div style={{
+                  padding: '10px 16px 6px',
+                  fontSize: 8, fontWeight: 900, color: '#2563EB',
+                  textTransform: 'uppercase', letterSpacing: '0.3em',
+                  borderTop: gi > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  background: 'rgba(37,99,235,0.04)',
+                }}>
+                  {group.group}
+                </div>
+                {/* Goals in group */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+                  {group.goals.map(g => (
+                    <button
+                      key={g.value}
+                      onClick={() => { setGoal(g.value); setOpen(false); }}
+                      style={{
+                        padding: '10px 16px', background: g.value === goal ? 'rgba(37,99,235,0.15)' : 'transparent',
+                        border: 'none', borderRight: '1px solid rgba(255,255,255,0.03)',
+                        borderBottom: '1px solid rgba(255,255,255,0.03)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                        transition: 'background 0.15s', textAlign: 'left',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.background = g.value === goal ? 'rgba(37,99,235,0.15)' : 'transparent'}
+                    >
+                      <span style={{ fontSize: 14 }}>{g.icon}</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: g.value === goal ? 800 : 600,
+                        color: g.value === goal ? '#93C5FD' : 'rgba(255,255,255,0.45)',
+                        letterSpacing: '0.02em',
+                      }}>{g.label}</span>
+                      {g.value === goal && <span style={{ marginLeft: 'auto', color: '#2563EB', fontSize: 10 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const HomePage = ({ onScanComplete }) => {
   const [url, setUrl] = useState('');
   const [goal, setGoal] = useState('cro');
@@ -234,35 +306,11 @@ const HomePage = ({ onScanComplete }) => {
               SCAN →
             </button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', width: '100%' }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Select Audit Goal</span>
-            <div style={{ position: 'relative', width: '100%', maxWidth: 480 }}>
-              <select
-                value={goal}
-                onChange={e => setGoal(e.target.value)}
-                style={{
-                  width: '100%', padding: '12px 40px 12px 16px',
-                  background: '#0F1929', border: '1px solid rgba(37,99,235,0.3)',
-                  borderRadius: 12, color: '#93C5FD', fontSize: 13, fontWeight: 700,
-                  cursor: 'pointer', outline: 'none', appearance: 'none',
-                  WebkitAppearance: 'none', letterSpacing: '0.02em',
-                }}
-              >
-                {GOAL_GROUPS.map(group => (
-                  <optgroup key={group.group} label={group.group}>
-                    {group.goals.map(g => (
-                      <option key={g.value} value={g.value}>{g.icon} {g.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-              <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#2563EB', pointerEvents: 'none', fontSize: 12 }}>▼</span>
-            </div>
-          </div>
+          <GoalSelector goal={goal} setGoal={setGoal} />
           {error && <div style={{ color: '#EF4444', fontSize: 12, fontFamily: 'monospace', textAlign: 'left', paddingLeft: 20 }}>⚠ {error}</div>}
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 48 }}>
-          {[['12','Node Analysis'],['23','Audit Goals'],['AI','Powered SWOT']].map(([v,l]) => (
+          {[['12','Node Analysis'],['13','Audit Goals'],['AI','Powered SWOT']].map(([v,l]) => (
             <div key={l}>
               <div style={{ fontSize: 28, fontWeight: 900, fontStyle: 'italic', color: '#FFFFFF' }}>{v}</div>
               <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.2em', marginTop: 2 }}>{l}</div>
