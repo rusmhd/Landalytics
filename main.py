@@ -395,6 +395,87 @@ def extract_signals(markdown: str) -> dict:
 # ---------------------------------------------------------------------------
 # Scoring functions
 # ---------------------------------------------------------------------------
+def score_https_ssl(url: str) -> int:
+    # HTTPS presence - secure = 90, insecure = 10
+    return 90 if url.startswith("https://") else 10
+
+def score_title_tag(sig: dict) -> int:
+    # Title tag quality - length, presence, structure
+    title = sig.get("title", "")
+    if not title:
+        return 5
+    score = 40
+    length = len(title)
+    if 30 <= length <= 60:
+        score += 35
+    elif 20 <= length < 30 or 60 < length <= 70:
+        score += 20
+    else:
+        score += 5
+    if any(sep in title for sep in ["|", "-", ":"]):
+        score += 15
+    if title.lower().strip() in ["home", "welcome", "untitled", "index"]:
+        score -= 20
+    return min(100, max(5, score))
+
+def score_heading_hierarchy(sig: dict) -> int:
+    # H1-H3 structure depth
+    score = 0
+    if sig.get("h1") and sig["h1"] != "No H1 Found":
+        score += 40
+    if sig.get("h2s"):
+        score += 30
+        if len(sig["h2s"]) >= 3:
+            score += 10
+    if sig.get("h3s"):
+        score += 20
+    return min(100, max(5, score))
+
+def score_content_depth(sig: dict) -> int:
+    # Word count and structural richness
+    page_text = sig.get("page_text", "")
+    word_count = len(page_text.split())
+    score = 0
+    if word_count >= 800:   score += 50
+    elif word_count >= 400: score += 35
+    elif word_count >= 200: score += 20
+    elif word_count >= 100: score += 10
+    else:                   score += 2
+    heading_count = len(sig.get("h2s", [])) + len(sig.get("h3s", []))
+    score += min(30, heading_count * 6)
+    if sig.get("body_copy"):
+        score += 20
+    return min(100, max(5, score))
+
+def score_schema_markup(sig: dict) -> int:
+    # Structured data presence
+    if sig.get("has_schema"):
+        return 90
+    pt = sig.get("page_text", "")
+    if re.search(r"schema\.org|ld\+json|itemtype", pt):
+        return 70
+    return 15
+
+def score_readability(sig: dict) -> int:
+    # Sentence length and scannability
+    body = sig.get("body_copy", "")
+    if not body:
+        return 20
+    score = 30
+    sentences = re.split(r"[.!?]+", body)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+    if sentences:
+        avg_words = sum(len(s.split()) for s in sentences) / len(sentences)
+        if avg_words <= 15:   score += 40
+        elif avg_words <= 20: score += 30
+        elif avg_words <= 25: score += 15
+        else:                 score += 5
+    para_count = len([l for l in body.split("|") if l.strip()])
+    score += min(20, para_count * 5)
+    if len(body) > 400 and "|" not in body:
+        score -= 10
+    return min(100, max(5, score))
+
 def score_conversion_intent(sig: dict, goal: str) -> int:
     score = 0
     cta_texts, total_links = sig["cta_texts"], sig["total_links"]
@@ -512,10 +593,18 @@ async def analyze_site(request: Request, body: AuditRequest):
     sig = extract_signals(html) if html else EMPTY_SIG
 
     scores: dict = {
+        # Core gauges
         "conversion_intent":  score_conversion_intent(sig, goal),
         "trust_resonance":    score_trust_resonance(sig),
         "mobile_readiness":   score_mobile_readiness(sig, page_speed),
         "semantic_authority": score_semantic_authority(sig),
+        # Deep node scan
+        "https_ssl":          score_https_ssl(url),
+        "title_tag":          score_title_tag(sig),
+        "heading_hierarchy":  score_heading_hierarchy(sig),
+        "content_depth":      score_content_depth(sig),
+        "schema_markup":      score_schema_markup(sig),
+        "readability":        score_readability(sig),
     }
     if page_speed is not None:
         scores["page_speed"] = page_speed
