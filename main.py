@@ -114,8 +114,12 @@ def get_client_ip(request: Request) -> str:
 
 # Allowed goal values — whitelist approach, reject anything else
 VALID_GOALS = {
-    "lead_generation", "saas_trial", "ecommerce",
-    "newsletter", "book_demo", "app_download",
+    "ab_testing", "cart_abandonment", "cro", "customer_data_platform",
+    "customer_engagement", "cx_optimization", "customer_retention", "feature_rollout",
+    "grow_traffic", "landing_page_optimization", "mobile_ab_testing", "multivariate_testing",
+    "push_notifications", "server_side_testing", "session_recording", "usability_testing",
+    "visitor_behavior", "form_analytics", "heatmaps", "website_optimization",
+    "personalization", "website_redesign", "website_surveys",
 }
 
 # Blocked private/local network ranges — prevent SSRF (OWASP: A10)
@@ -209,24 +213,149 @@ PAGESPEED_API_KEY = _require_env("PAGESPEED_API_KEY")
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 # ---------------------------------------------------------------------------
-# Goal metadata
+# Goal metadata — 23 goals covering the full CRO/marketing spectrum
 # ---------------------------------------------------------------------------
 GOAL_LABELS = {
-    "lead_generation": "Lead Generation",
-    "saas_trial":      "SaaS Free Trial",
-    "ecommerce":       "E-commerce / Sales",
-    "newsletter":      "Newsletter Signup",
-    "book_demo":       "Book a Demo",
-    "app_download":    "App Download",
+    "ab_testing":               "A/B Testing",
+    "cart_abandonment":         "Cart Abandonment",
+    "cro":                      "Conversion Rate Optimization",
+    "customer_data_platform":   "Customer Data Platform",
+    "customer_engagement":      "Customer Engagement",
+    "cx_optimization":          "Customer Experience Optimization",
+    "customer_retention":       "Customer Retention",
+    "feature_rollout":          "Feature Rollout",
+    "grow_traffic":             "Grow Website Traffic",
+    "landing_page_optimization":"Landing Page Optimization",
+    "mobile_ab_testing":        "Mobile App A/B Testing",
+    "multivariate_testing":     "Multivariate Testing",
+    "push_notifications":       "Push Notifications",
+    "server_side_testing":      "Server-Side Testing",
+    "session_recording":        "Session Recording",
+    "usability_testing":        "Usability Testing",
+    "visitor_behavior":         "Visitor Behavior Analysis",
+    "form_analytics":           "Web Form Analytics",
+    "heatmaps":                 "Website Heatmaps",
+    "website_optimization":     "Website Optimization",
+    "personalization":          "Website Personalization",
+    "website_redesign":         "Website Redesign",
+    "website_surveys":          "Website Surveys",
 }
 
 GOAL_CONTEXT = {
-    "lead_generation": "Focus on form visibility, lead magnet clarity, friction reduction, and trust signals that encourage form submissions.",
-    "saas_trial":      "Focus on value proposition clarity, feature highlights, free trial CTA prominence, and reducing signup friction.",
-    "ecommerce":       "Focus on product clarity, pricing transparency, urgency signals, social proof, and checkout friction.",
-    "newsletter":      "Focus on value promise, content preview, low-commitment CTA, and email capture placement.",
-    "book_demo":       "Focus on credibility signals, clear benefit statements, calendar/scheduling friction, and social proof from existing clients.",
-    "app_download":    "Focus on app store badges visibility, screenshot quality, rating/review signals, and download CTA prominence.",
+    "ab_testing":
+        "Focus on clarity of test hypothesis, CTA button prominence, headline variation potential, "
+        "and whether page elements are isolated enough to be meaningfully tested. Identify elements "
+        "most likely to impact conversion when varied (headlines, CTAs, images, social proof).",
+
+    "cart_abandonment":
+        "Focus on checkout friction, trust signals at point of purchase, exit-intent triggers, "
+        "urgency/scarcity signals, cart visibility, saved cart features, and retargeting hooks. "
+        "Identify the exact moments where users are likely to drop off before completing purchase.",
+
+    "cro":
+        "Focus on the full conversion funnel — above-fold clarity, value proposition strength, "
+        "CTA placement and copy, form friction, trust architecture, social proof density, and "
+        "page load performance. Identify the single highest-impact change to improve conversion rate.",
+
+    "customer_data_platform":
+        "Focus on data capture mechanisms (forms, sign-ups, cookie consent), privacy compliance signals, "
+        "integration touchpoints, and how well the page communicates data value exchange to users. "
+        "Identify gaps in first-party data collection and consent UX.",
+
+    "customer_engagement":
+        "Focus on interactive elements, content depth, scroll depth triggers, community signals, "
+        "comment/feedback mechanisms, newsletter CTAs, and personalisation hooks. "
+        "Identify what keeps users engaged beyond the first visit.",
+
+    "cx_optimization":
+        "Focus on overall user journey clarity, navigation intuitiveness, support accessibility, "
+        "error state handling, loading performance, accessibility compliance, and emotional tone. "
+        "Identify friction points that degrade the end-to-end customer experience.",
+
+    "customer_retention":
+        "Focus on loyalty signals, member/subscriber benefits visibility, re-engagement CTAs, "
+        "account value communication, community belonging cues, and churn-prevention copy. "
+        "Identify what would make an existing customer return vs. leave.",
+
+    "feature_rollout":
+        "Focus on feature announcement clarity, benefit-led messaging, adoption CTAs, "
+        "changelog/update visibility, tutorial or onboarding links, and user education hooks. "
+        "Identify how effectively the page communicates the new feature value to existing users.",
+
+    "grow_traffic":
+        "Focus on SEO fundamentals — title tag, meta description, heading hierarchy, keyword density, "
+        "internal linking, schema markup, content depth, and social sharing signals. "
+        "Identify the highest-priority on-page SEO improvements to drive organic traffic growth.",
+
+    "landing_page_optimization":
+        "Focus on above-fold impact, headline-CTA alignment, visual hierarchy, form placement, "
+        "social proof proximity to CTA, page speed, and message-match with likely traffic sources. "
+        "Identify the single change most likely to lift landing page conversion rate.",
+
+    "mobile_ab_testing":
+        "Focus on mobile-specific UX — thumb-zone CTA placement, font legibility, tap target sizes, "
+        "swipe/scroll behaviour, mobile form friction, and app store deep-link visibility. "
+        "Identify elements that should be tested specifically for mobile users.",
+
+    "multivariate_testing":
+        "Focus on identifying multiple independent page elements that each have meaningful conversion "
+        "impact — headlines, images, CTAs, social proof blocks, pricing displays. "
+        "Assess which combinations of changes are worth testing simultaneously.",
+
+    "push_notifications":
+        "Focus on opt-in prompt placement and timing, permission request copy, value proposition for "
+        "subscribing, notification preference UI, and GDPR/consent compliance. "
+        "Identify how to maximise push notification opt-in rates without damaging UX.",
+
+    "server_side_testing":
+        "Focus on backend-rendered elements suitable for server-side experiments — pricing logic, "
+        "personalisation rules, recommendation algorithms, page variants, and feature flags. "
+        "Identify which data-driven decisions would benefit most from controlled server-side testing.",
+
+    "session_recording":
+        "Focus on identifying high-friction UX areas — confusing navigation, rage-click zones, "
+        "dead clicks, scroll depth drop-offs, and form abandonment points. "
+        "Identify the page areas most likely to reveal user confusion in session recordings.",
+
+    "usability_testing":
+        "Focus on task completion clarity, navigation discoverability, CTA labelling, error prevention, "
+        "cognitive load, and accessibility. Identify the top 3 usability issues a first-time visitor "
+        "would encounter trying to complete the page goal.",
+
+    "visitor_behavior":
+        "Focus on content hierarchy, scroll-depth signals, click-through patterns, internal link "
+        "structure, and engagement hooks. Identify which page sections are likely to get the most "
+        "attention and which are likely to be ignored based on layout and content.",
+
+    "form_analytics":
+        "Focus on form design, field count, field labelling, validation feedback, progress indicators, "
+        "error messaging, and form abandonment triggers. Identify every point of friction in the "
+        "form completion journey and rank by likely drop-off impact.",
+
+    "heatmaps":
+        "Focus on visual hierarchy, above-fold content density, CTA visibility, image placement, "
+        "and whitespace usage. Identify which elements are likely to attract the most clicks and "
+        "attention, and which important elements are likely to be missed by users.",
+
+    "website_optimization":
+        "Focus on technical performance (speed, mobile, Core Web Vitals signals), content quality, "
+        "SEO fundamentals, conversion elements, and overall UX. Provide a holistic audit covering "
+        "the most impactful improvements across performance, content, and conversion.",
+
+    "personalization":
+        "Focus on dynamic content opportunities, audience segmentation signals, geo/device targeting "
+        "hooks, returning visitor recognition, and behavioural trigger points. "
+        "Identify where personalised experiences would have the highest conversion impact.",
+
+    "website_redesign":
+        "Focus on brand clarity, visual consistency, navigation architecture, content hierarchy, "
+        "mobile experience, page speed baseline, and current conversion performance. "
+        "Identify what must be preserved, what must be fixed, and what should be reimagined.",
+
+    "website_surveys":
+        "Focus on survey trigger placement, exit-intent opportunities, post-conversion survey hooks, "
+        "NPS/CSAT signal collection points, and non-intrusive feedback mechanisms. "
+        "Identify the optimal moments and placements to collect user feedback without hurting conversion.",
 }
 
 # ---------------------------------------------------------------------------
@@ -633,9 +762,17 @@ def score_conversion_intent(sig: dict, goal: str) -> int:
     score += min(15, matched_text * 3)
 
     goal_signals = {
-        "ecommerce":    ["add to cart","buy now","checkout","price","$","£","€"],
-        "book_demo":    ["schedule","calendar","demo","book a call"],
-        "app_download": ["app store","google play","download","install"],
+        "cart_abandonment":  ["cart","checkout","add to cart","buy","order","payment","abandon"],
+        "cro":               ["get started","sign up","try","buy","convert","cta","optimize"],
+        "grow_traffic":      ["read","blog","article","guide","learn","seo","search","traffic"],
+        "landing_page_optimization": ["get started","sign up","try free","download","claim","access"],
+        "mobile_ab_testing": ["app","download","install","mobile","ios","android"],
+        "customer_retention":["login","account","member","loyalty","reward","renew","subscription"],
+        "form_analytics":    ["form","submit","name","email","phone","contact","request"],
+        "heatmaps":          ["click","scroll","view","watch","explore","discover"],
+        "personalization":   ["for you","recommended","tailored","custom","based on","personal"],
+        "push_notifications":["subscribe","notify","allow","enable","opt in","permission"],
+        "website_surveys":   ["feedback","survey","rate","review","opinion","tell us","nps"],
     }
     if goal in goal_signals and any(w in sig["page_text"] for w in goal_signals[goal]):
         score += 15
