@@ -613,21 +613,25 @@ def score_search_intent(sig: dict, goal: str) -> int:
     return score
 
 def score_conversion_intent(sig: dict, goal: str) -> int:
-    score = 0
+    # Base of 20 — Jina-rendered pages likely have some CTA even if not captured
+    score = 20
     cta_texts, total_links = sig["cta_texts"], sig["total_links"]
 
     if sig["has_form"]:
-        score += 30
+        score += 25
         visible_inputs = [i for i in sig["input_types"] if i not in ("hidden", "submit")]
         if len(visible_inputs) <= 3:
-            score += 10  # short forms convert better
+            score += 10
 
     strong_kws = ["get started","sign up","try free","buy now","book","start","join",
                   "subscribe","download","get","request","claim","access"]
     matched = sum(1 for cta in cta_texts for kw in strong_kws if kw in cta.lower())
     score += min(25, matched * 8)
 
-    # Goal-specific signals
+    # Also scan page_text for CTA keywords — catches JS-rendered buttons
+    matched_text = sum(1 for kw in strong_kws if kw in sig["page_text"])
+    score += min(15, matched_text * 3)
+
     goal_signals = {
         "ecommerce":    ["add to cart","buy now","checkout","price","$","£","€"],
         "book_demo":    ["schedule","calendar","demo","book a call"],
@@ -636,47 +640,53 @@ def score_conversion_intent(sig: dict, goal: str) -> int:
     if goal in goal_signals and any(w in sig["page_text"] for w in goal_signals[goal]):
         score += 15
 
-    score += 10 if 3 <= total_links <= 10 else (-5 if total_links > 25 else 0)
+    score += 5 if total_links >= 3 else 0
     return min(100, max(5, score))
 
 def score_trust_resonance(sig: dict) -> int:
-    score = 25
+    # Base of 30 — most legitimate sites have some trust signals
+    score = 30
     pt = sig["page_text"]
     trust_patterns = ["testimonial","review","rating","trust","certif","award","partner","client",
-                      "guarantee","secure","ssl","verified","money.back","refund","privacy","gdpr"]
+                      "guarantee","secure","ssl","verified","money back","refund","privacy","gdpr",
+                      "compliance","iso","soc","hipaa","pci"]
     score += sum(4 for p in trust_patterns if re.search(p, pt))
-    if re.search(r'\b\d{3,}[,\d]*\s*(customers?|users?|clients?|companies|brands?)', pt):
+    if re.search(r"\d{3,}[,\d]*\s*(customers?|users?|clients?|companies|brands?)", pt):
         score += 12
-    if sig["has_schema"]:   score += 8
-    if len(sig["alt_texts"]) > 2: score += 5
-    if re.search(r'ssl|https|secure|encrypt', pt): score += 5
+    if sig["has_schema"]:          score += 8
+    if len(sig["alt_texts"]) > 2:  score += 5
+    if re.search(r"ssl|https|secure|encrypt", pt): score += 5
     return min(100, max(5, score))
 
 def score_mobile_readiness(sig: dict, page_speed: Optional[int]) -> int:
-    # Real PageSpeed data takes priority over inferred score
+    # Real PageSpeed data takes priority
     if page_speed is not None:
         return page_speed
-    score = 0
+    # Jina always sets has_viewport=True so base is already high
+    score = 50
     if sig["has_viewport"]:
-        score += 45
-        if "width=device-width" in sig["viewport_content"]: score += 20
+        score += 20
+        if "width=device-width" in sig["viewport_content"]: score += 15
         if "initial-scale=1"    in sig["viewport_content"]: score += 10
-    if re.search(r'@media|responsive|mobile', sig["page_text"]): score += 15
-    if sig["img_count"] < 20: score += 10
+    if re.search(r"@media|responsive|mobile", sig["page_text"]): score += 5
     return min(100, max(5, score))
 
 def score_semantic_authority(sig: dict) -> int:
-    score = 0
-    if sig["h1"] and sig["h1"] != "No H1 Found": score += 28
+    # Base of 25 — JS sites have semantic structure even if Jina cant fully parse it
+    score = 25
+    if sig["h1"] and sig["h1"] != "No H1 Found": score += 25
     if sig["h2s"]: score += 18
     if sig["h3s"]: score += 8
     if sig["meta_description"]:
-        score += 14
+        score += 12
         if 50 <= len(sig["meta_description"]) <= 160: score += 6
     if sig["title"]:
-        score += 10
+        score += 8
         if 30 <= len(sig["title"]) <= 65: score += 6
     if sig["has_schema"]: score += 10
+    # Extra: if page_text has substantial content, it signals good semantic structure
+    word_count = len(sig.get("page_text","").split())
+    if word_count > 300: score += 5
     return min(100, max(5, score))
 
 # ---------------------------------------------------------------------------
