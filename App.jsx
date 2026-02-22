@@ -4,14 +4,47 @@ const getScoreColor = (s) => s >= 85 ? '#10b981' : s >= 65 ? '#3b82f6' : s >= 45
 const getScoreLabel = (s) => s >= 85 ? 'EXCELLENT' : s >= 65 ? 'GOOD' : s >= 45 ? 'FAIR' : 'WEAK';
 const getScoreBg = (s) => s >= 85 ? 'rgba(16,185,129,0.08)' : s >= 65 ? 'rgba(59,130,246,0.08)' : s >= 45 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)';
 
-const GOALS = [
-  { value: 'lead_generation', label: 'Lead Generation',    icon: '🎯' },
-  { value: 'saas_trial',      label: 'SaaS Free Trial',    icon: '🚀' },
-  { value: 'ecommerce',       label: 'E-commerce / Sales', icon: '🛒' },
-  { value: 'newsletter',      label: 'Newsletter Signup',  icon: '📩' },
-  { value: 'book_demo',       label: 'Book a Demo',        icon: '📅' },
-  { value: 'app_download',    label: 'App Download',       icon: '📲' },
+const GOAL_GROUPS = [
+  {
+    group: 'Testing & Optimization',
+    goals: [
+      { value: 'ab_testing',          label: 'A/B Testing',                icon: '🔬' },
+      { value: 'multivariate_testing',label: 'Multivariate Testing',       icon: '🧪' },
+      { value: 'mobile_ab_testing',   label: 'Mobile App A/B Testing',     icon: '📱' },
+      { value: 'server_side_testing', label: 'Server-Side Testing',        icon: '⚙️' },
+      { value: 'cro',                 label: 'Conversion Rate Optimization',icon: '📈' },
+      { value: 'landing_page_optimization', label: 'Landing Page Optimization', icon: '🎯' },
+      { value: 'website_optimization',label: 'Website Optimization',       icon: '🛠️' },
+      { value: 'website_redesign',    label: 'Website Redesign',           icon: '🎨' },
+    ],
+  },
+  {
+    group: 'Customer & Behavior',
+    goals: [
+      { value: 'visitor_behavior',    label: 'Visitor Behavior Analysis',  icon: '👁️' },
+      { value: 'session_recording',   label: 'Session Recording',          icon: '🎥' },
+      { value: 'heatmaps',            label: 'Website Heatmaps',           icon: '🔥' },
+      { value: 'usability_testing',   label: 'Usability Testing',          icon: '🖱️' },
+      { value: 'customer_engagement', label: 'Customer Engagement',        icon: '💬' },
+      { value: 'cx_optimization',     label: 'Customer Experience Optimization', icon: '⭐' },
+      { value: 'customer_retention',  label: 'Customer Retention',         icon: '🔄' },
+      { value: 'personalization',     label: 'Website Personalization',    icon: '✨' },
+    ],
+  },
+  {
+    group: 'Data & Analytics',
+    goals: [
+      { value: 'form_analytics',      label: 'Web Form Analytics',         icon: '📋' },
+      { value: 'website_surveys',     label: 'Website Surveys',            icon: '📊' },
+      { value: 'customer_data_platform', label: 'Customer Data Platform',  icon: '🗄️' },
+      { value: 'cart_abandonment',    label: 'Cart Abandonment',           icon: '🛒' },
+      { value: 'push_notifications',  label: 'Push Notifications',         icon: '🔔' },
+      { value: 'grow_traffic',        label: 'Grow Website Traffic',       icon: '🚀' },
+      { value: 'feature_rollout',     label: 'Feature Rollout',            icon: '🚢' },
+    ],
+  },
 ];
+const GOALS = GOAL_GROUPS.flatMap(g => g.goals);
 
 const Gauge = ({ score = 0, label, size = 130 }) => {
   const [anim, setAnim] = useState(0);
@@ -201,27 +234,35 @@ const HomePage = ({ onScanComplete }) => {
               SCAN →
             </button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Select Page Goal</span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {GOALS.map(g => (
-                <button key={g.value} onClick={() => setGoal(g.value)} style={{
-                  background: goal === g.value ? 'rgba(37,99,235,0.2)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${goal === g.value ? 'rgba(37,99,235,0.6)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 100, padding: '7px 16px',
-                  color: goal === g.value ? '#93C5FD' : 'rgba(255,255,255,0.3)',
-                  fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}>
-                  <span>{g.icon}</span><span>{g.label}</span>
-                </button>
-              ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', width: '100%' }}>
+            <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.3em' }}>Select Audit Goal</span>
+            <div style={{ position: 'relative', width: '100%', maxWidth: 480 }}>
+              <select
+                value={goal}
+                onChange={e => setGoal(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 40px 12px 16px',
+                  background: '#0F1929', border: '1px solid rgba(37,99,235,0.3)',
+                  borderRadius: 12, color: '#93C5FD', fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', outline: 'none', appearance: 'none',
+                  WebkitAppearance: 'none', letterSpacing: '0.02em',
+                }}
+              >
+                {GOAL_GROUPS.map(group => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.goals.map(g => (
+                      <option key={g.value} value={g.value}>{g.icon} {g.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#2563EB', pointerEvents: 'none', fontSize: 12 }}>▼</span>
             </div>
           </div>
           {error && <div style={{ color: '#EF4444', fontSize: 12, fontFamily: 'monospace', textAlign: 'left', paddingLeft: 20 }}>⚠ {error}</div>}
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 48 }}>
-          {[['12','Node Analysis'],['4','Core Metrics'],['AI','Powered SWOT']].map(([v,l]) => (
+          {[['12','Node Analysis'],['23','Audit Goals'],['AI','Powered SWOT']].map(([v,l]) => (
             <div key={l}>
               <div style={{ fontSize: 28, fontWeight: 900, fontStyle: 'italic', color: '#FFFFFF' }}>{v}</div>
               <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.2em', marginTop: 2 }}>{l}</div>
