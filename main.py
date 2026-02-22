@@ -317,19 +317,35 @@ def extract_signals(markdown: str) -> dict:
     lines = markdown.split("\n")
     text_lower = markdown.lower()
 
+    # ── Title & meta — Jina puts these at the very top as "Title: ..." / "Description: ..."
+    # Try multiple patterns since Jina's format varies slightly
+    title_text = ""
+    for pat in [r"^Title:\s*(.+)$", r"^# (.+)$"]:
+        m = re.search(pat, markdown, re.MULTILINE | re.IGNORECASE)
+        if m:
+            candidate = m.group(1).strip()[:120]
+            # Skip if it looks like a nav item or very short
+            if len(candidate) > 5:
+                title_text = candidate
+                break
+
+    meta_desc_txt = ""
+    for pat in [r"^Description:\s*(.+)$", r"^Meta[- ]?Description:\s*(.+)$", r"^URL Source:.+\nMarkdown Content:\s*\n+(.{80,200})"]:
+        m = re.search(pat, markdown, re.MULTILINE | re.IGNORECASE)
+        if m:
+            meta_desc_txt = m.group(1).strip()[:200]
+            break
+
     # ── Headings ─────────────────────────────────────────────────────────────
     # Jina uses standard markdown: # H1, ## H2, ### H3
     h1_lines  = [l.lstrip("# ").strip()[:120] for l in lines if l.startswith("# ")  and not l.startswith("## ")]
     h2_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("## ") and not l.startswith("### ")]
     h3_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("### ")]
-    h1_text   = h1_lines[0] if h1_lines else "No H1 Found"
+    h1_text   = h1_lines[0] if h1_lines else (title_text if title_text else "No H1 Found")
 
-    # ── Title & meta — Jina often includes these at the top ──────────────────
-    title_match = re.search(r'^Title:\s*(.+)$', markdown, re.MULTILINE | re.IGNORECASE)
-    title_text  = title_match.group(1).strip()[:120] if title_match else (h1_text if h1_text != "No H1 Found" else "")
-
-    desc_match    = re.search(r'^(?:Description|Meta Description):\s*(.+)$', markdown, re.MULTILINE | re.IGNORECASE)
-    meta_desc_txt = desc_match.group(1).strip()[:200] if desc_match else ""
+    # If title still empty, fall back to h1
+    if not title_text and h1_text != "No H1 Found":
+        title_text = h1_text
 
     # ── Body copy — meaningful non-heading lines ──────────────────────────────
     body_lines = [
@@ -403,7 +419,7 @@ def score_title_tag(sig: dict) -> int:
     # Title tag quality - length, presence, structure
     title = sig.get("title", "")
     if not title:
-        return 5
+        return 25  # missing but not catastrophic - Jina may not have captured it
     score = 40
     length = len(title)
     if 30 <= length <= 60:
@@ -411,7 +427,7 @@ def score_title_tag(sig: dict) -> int:
     elif 20 <= length < 30 or 60 < length <= 70:
         score += 20
     else:
-        score += 5
+        score += 10
     if any(sep in title for sep in ["|", "-", ":"]):
         score += 15
     if title.lower().strip() in ["home", "welcome", "untitled", "index"]:
@@ -420,15 +436,15 @@ def score_title_tag(sig: dict) -> int:
 
 def score_heading_hierarchy(sig: dict) -> int:
     # H1-H3 structure depth
-    score = 0
+    score = 20  # base - JS sites may not expose headings to Jina
     if sig.get("h1") and sig["h1"] != "No H1 Found":
-        score += 40
+        score += 35
     if sig.get("h2s"):
-        score += 30
+        score += 25
         if len(sig["h2s"]) >= 3:
             score += 10
     if sig.get("h3s"):
-        score += 20
+        score += 10
     return min(100, max(5, score))
 
 def score_content_depth(sig: dict) -> int:
@@ -454,7 +470,9 @@ def score_schema_markup(sig: dict) -> int:
     pt = sig.get("page_text", "")
     if re.search(r"schema\.org|ld\+json|itemtype", pt):
         return 70
-    return 15
+    # Known well-established sites likely have schema even if Jina doesn't capture it
+    # Floor raised since JS-rendered schema is invisible to markdown parsers
+    return 30
 
 def score_readability(sig: dict) -> int:
     # Sentence length and scannability
@@ -480,7 +498,7 @@ def score_meta_description(sig: dict) -> int:
     # Meta description - presence, length, and copy quality
     meta = sig.get("meta_description", "")
     if not meta:
-        return 5
+        return 20  # missing but Jina may not have captured it from JS-rendered pages
     score = 30
     length = len(meta)
     if 120 <= length <= 160:
@@ -500,13 +518,14 @@ def score_image_alt_text(sig: dict) -> int:
     img_count = sig.get("img_count", 0)
     alt_texts = sig.get("alt_texts", [])
     if img_count == 0:
-        return 50  # no images - neutral score
+        return 50  # no images detected - neutral score
     coverage = len(alt_texts) / img_count
     if coverage >= 0.9:   return 90
     elif coverage >= 0.7: return 70
-    elif coverage >= 0.5: return 50
-    elif coverage >= 0.3: return 35
-    else:                 return 15
+    elif coverage >= 0.5: return 55
+    elif coverage >= 0.3: return 40
+    elif coverage >= 0.1: return 30
+    else:                 return 20  # floor raised - Jina may strip img metadata
 
 def score_internal_links(sig: dict) -> int:
     # Internal link structure - quantity and nav depth
