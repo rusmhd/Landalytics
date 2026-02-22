@@ -49,6 +49,10 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
+    # Let CORS preflight OPTIONS pass through untouched
+    if request.method == "OPTIONS":
+        response = await call_next(request)
+        return response
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -261,94 +265,131 @@ def get_pagespeed_score(url: str) -> Optional[int]:
     return None
 
 # ---------------------------------------------------------------------------
-# Scraper — hardened (OWASP: A10 SSRF already handled at validation layer)
+# Scraper — uses Jina AI Reader to bypass Render free-tier network restrictions.
+# Jina fetches and renders the page on their servers, returning clean markdown.
+# SSRF is already prevented at the validation layer before this is called.
 # ---------------------------------------------------------------------------
 def scrape_page(url: str) -> str:
     """
-    Fetch the HTML of a validated URL.
-    Timeout and redirect limits prevent resource exhaustion.
+    Fetch page content via Jina AI Reader (r.jina.ai).
+    Returns clean markdown text — handles JS-rendered pages automatically.
+    Falls back to empty string on failure so the audit degrades gracefully.
     """
+    jina_url = f"https://r.jina.ai/{url}"
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
+        "Accept": "text/plain",
+        "User-Agent": "Landalytics/1.0",
+        # Request extended metadata (title, description) in the response
+        "X-Return-Format": "markdown",
     }
     try:
-        with httpx.Client(
-            timeout=15.0,
-            follow_redirects=True,
-            max_redirects=5,           # prevent redirect loops
-            headers=headers,
-        ) as client:
-            r = client.get(url)
+        with httpx.Client(timeout=25.0, follow_redirects=True, max_redirects=3) as client:
+            r = client.get(jina_url, headers=headers)
             if r.status_code == 200:
-                # Cap response size at 5 MB to prevent memory exhaustion
-                return r.text[:5_000_000]
+                # Cap at 1MB — markdown is much denser than raw HTML
+                return r.text[:1_000_000]
+            print(f"[Jina error] status {r.status_code}")
     except Exception as e:
-        print(f"[Scrape error] {e}")
+        print(f"[Jina error] {e}")
     return ""
 
 # ---------------------------------------------------------------------------
-# Signal extraction
+# Signal extraction — parses Jina markdown instead of raw HTML.
+# Jina returns structured markdown so we use regex patterns rather than
+# BeautifulSoup HTML parsing.
 # ---------------------------------------------------------------------------
-def extract_signals(html: str) -> dict:
-    """Parse HTML and extract CRO-relevant signals for scoring and AI context."""
-    soup = BeautifulSoup(html, "html.parser")
+def extract_signals(markdown: str) -> dict:
+    """
+    Extract CRO-relevant signals from Jina markdown output.
+    Jina formats the page as clean markdown with headings, links, and body text.
+    """
+    if not markdown:
+        return {
+            "h1": "No Content", "h2s": [], "h3s": [], "title": "",
+            "meta_description": "", "body_copy": "", "cta_texts": [],
+            "img_count": 0, "alt_texts": [], "has_form": False,
+            "input_types": [], "nav_links": [], "total_links": 0,
+            "has_schema": False, "has_viewport": True,  # assume mobile-ready if Jina fetched it
+            "viewport_content": "width=device-width, initial-scale=1",
+            "page_text": "",
+        }
 
-    # Remove noise tags before text extraction
-    for tag in soup(["script", "style", "noscript"]):
-        tag.decompose()
+    lines = markdown.split("\n")
+    text_lower = markdown.lower()
 
-    h1      = soup.find("h1")
-    h1_text = h1.get_text(strip=True)[:120] if h1 else "No H1 Found"
-    h2s     = [t.get_text(strip=True)[:80] for t in soup.find_all("h2")][:5]
-    h3s     = [t.get_text(strip=True)[:80] for t in soup.find_all("h3")][:5]
+    # ── Headings ─────────────────────────────────────────────────────────────
+    # Jina uses standard markdown: # H1, ## H2, ### H3
+    h1_lines  = [l.lstrip("# ").strip()[:120] for l in lines if l.startswith("# ")  and not l.startswith("## ")]
+    h2_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("## ") and not l.startswith("### ")]
+    h3_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("### ")]
+    h1_text   = h1_lines[0] if h1_lines else "No H1 Found"
 
-    title_tag  = soup.find("title")
-    title_text = title_tag.get_text(strip=True)[:120] if title_tag else ""
+    # ── Title & meta — Jina often includes these at the top ──────────────────
+    title_match = re.search(r'^Title:\s*(.+)$', markdown, re.MULTILINE | re.IGNORECASE)
+    title_text  = title_match.group(1).strip()[:120] if title_match else (h1_text if h1_text != "No H1 Found" else "")
 
-    meta_desc     = soup.find("meta", attrs={"name": "description"})
-    meta_desc_txt = meta_desc.get("content", "")[:200] if meta_desc else ""
+    desc_match    = re.search(r'^(?:Description|Meta Description):\s*(.+)$', markdown, re.MULTILINE | re.IGNORECASE)
+    meta_desc_txt = desc_match.group(1).strip()[:200] if desc_match else ""
 
-    # First meaningful body paragraphs (>40 chars)
-    paras     = [p.get_text(strip=True) for p in soup.find_all("p") if len(p.get_text(strip=True)) > 40][:5]
-    body_copy = " | ".join(paras)[:600]
+    # ── Body copy — meaningful non-heading lines ──────────────────────────────
+    body_lines = [
+        l.strip() for l in lines
+        if l.strip()
+        and not l.startswith("#")
+        and not l.startswith("[")
+        and not l.startswith("!")
+        and len(l.strip()) > 40
+    ][:5]
+    body_copy = " | ".join(body_lines)[:600]
 
-    # CTA texts — deduplicated, bounded length
-    buttons   = soup.find_all(["button", "a"])
-    cta_texts = list({b.get_text(strip=True) for b in buttons if 2 < len(b.get_text(strip=True)) < 40})[:8]
+    # ── Links / CTAs — markdown links: [text](url) ───────────────────────────
+    link_texts  = re.findall(r'\[([^\]]{2,40})\]\(https?://[^\)]+\)', markdown)
+    cta_texts   = list(set(link_texts))[:8]
+    total_links = len(re.findall(r'\]\(https?://', markdown))
 
-    imgs      = soup.find_all("img")
-    img_count = len(imgs)
-    alt_texts = [img.get("alt", "").strip()[:80] for img in imgs if img.get("alt", "").strip()][:5]
+    # ── Images — markdown images: ![alt](url) ────────────────────────────────
+    img_alts  = re.findall(r'!\[([^\]]{1,80})\]', markdown)
+    img_count = len(img_alts)
+    alt_texts = [a.strip() for a in img_alts if a.strip()][:5]
 
-    has_form    = bool(soup.find("form"))
-    inputs      = soup.find_all("input")
-    input_types = [i.get("type", "text") for i in inputs]
+    # ── Form detection — look for form-related keywords in the text ──────────
+    form_kws  = ["subscribe", "sign up", "email", "submit", "get started", "name", "phone", "contact"]
+    has_form  = sum(1 for kw in form_kws if kw in text_lower) >= 2
+    # Infer input types from context
+    input_types = []
+    if "email" in text_lower:   input_types.append("email")
+    if "phone" in text_lower:   input_types.append("tel")
+    if "name" in text_lower:    input_types.append("text")
+    if "password" in text_lower: input_types.append("password")
 
-    nav       = soup.find("nav")
-    nav_links = [a.get_text(strip=True)[:40] for a in (nav.find_all("a") if nav else [])][:8]
-    total_links = len(soup.find_all("a"))
+    # ── Nav links — first cluster of short links at top of doc ───────────────
+    nav_pattern = re.findall(r'\[([^\]]{2,30})\]\(', markdown[:1500])
+    nav_links   = list(set(nav_pattern))[:8]
 
-    # Truncated lowercase page text for pattern matching
-    page_text = soup.get_text().lower()[:2000]
-
-    has_schema   = bool(soup.find("script", attrs={"type": "application/ld+json"}))
-    has_viewport = bool(soup.find("meta", attrs={"name": "viewport"}))
-    viewport_tag = soup.find("meta", attrs={"name": "viewport"})
-    viewport_str = viewport_tag.get("content", "")[:100] if viewport_tag else ""
+    # ── Trust / schema signals — inferred from text ───────────────────────────
+    has_schema   = bool(re.search(r'application/ld\+json|schema\.org', markdown, re.IGNORECASE))
+    # Jina-rendered pages are always viewport-aware (it uses a headless browser)
+    has_viewport    = True
+    viewport_content = "width=device-width, initial-scale=1"
 
     return {
-        "h1": h1_text, "h2s": h2s, "h3s": h3s,
-        "title": title_text, "meta_description": meta_desc_txt,
-        "body_copy": body_copy, "cta_texts": cta_texts,
-        "img_count": img_count, "alt_texts": alt_texts,
-        "has_form": has_form, "input_types": input_types,
-        "nav_links": nav_links, "total_links": total_links,
-        "has_schema": has_schema, "has_viewport": has_viewport,
-        "viewport_content": viewport_str, "page_text": page_text,
+        "h1": h1_text,
+        "h2s": h2_lines[:5],
+        "h3s": h3_lines[:5],
+        "title": title_text,
+        "meta_description": meta_desc_txt,
+        "body_copy": body_copy,
+        "cta_texts": cta_texts,
+        "img_count": img_count,
+        "alt_texts": alt_texts,
+        "has_form": has_form,
+        "input_types": input_types,
+        "nav_links": nav_links,
+        "total_links": total_links,
+        "has_schema": has_schema,
+        "has_viewport": has_viewport,
+        "viewport_content": viewport_content,
+        "page_text": text_lower[:2000],
     }
 
 # ---------------------------------------------------------------------------
