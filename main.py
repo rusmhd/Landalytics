@@ -476,6 +476,123 @@ def score_readability(sig: dict) -> int:
         score -= 10
     return min(100, max(5, score))
 
+def score_meta_description(sig: dict) -> int:
+    # Meta description - presence, length, and copy quality
+    meta = sig.get("meta_description", "")
+    if not meta:
+        return 5
+    score = 30
+    length = len(meta)
+    if 120 <= length <= 160:
+        score += 40  # ideal length for SERPs
+    elif 80 <= length < 120:
+        score += 25
+    elif 0 < length < 80:
+        score += 10
+    # Reward action words that improve CTR
+    action_words = ["learn", "discover", "get", "find", "try", "start", "boost", "improve", "save", "free"]
+    matches = sum(1 for w in action_words if w in meta.lower())
+    score += min(30, matches * 8)
+    return min(100, max(5, score))
+
+def score_image_alt_text(sig: dict) -> int:
+    # Alt text coverage ratio - how many images have descriptive alt text
+    img_count = sig.get("img_count", 0)
+    alt_texts = sig.get("alt_texts", [])
+    if img_count == 0:
+        return 50  # no images - neutral score
+    coverage = len(alt_texts) / img_count
+    if coverage >= 0.9:   return 90
+    elif coverage >= 0.7: return 70
+    elif coverage >= 0.5: return 50
+    elif coverage >= 0.3: return 35
+    else:                 return 15
+
+def score_internal_links(sig: dict) -> int:
+    # Internal link structure - quantity and nav depth
+    total_links = sig.get("total_links", 0)
+    nav_links = sig.get("nav_links", [])
+    score = 0
+    # Healthy internal link count
+    if total_links >= 10:   score += 35
+    elif total_links >= 5:  score += 25
+    elif total_links >= 2:  score += 15
+    else:                   score += 5
+    # Nav links indicate proper site structure
+    if len(nav_links) >= 5:   score += 35
+    elif len(nav_links) >= 3: score += 25
+    elif len(nav_links) >= 1: score += 15
+    # Penalise too many links - could dilute page authority
+    if total_links > 100:
+        score -= 15
+    return min(100, max(5, score))
+
+def score_keyword_placement(sig: dict) -> int:
+    # Keyword prominence in key positions: H1, title, first paragraph
+    score = 20  # base
+    h1 = sig.get("h1", "").lower()
+    title = sig.get("title", "").lower()
+    body = sig.get("body_copy", "").lower()
+    # Extract candidate keywords from H1 (most authoritative)
+    h1_words = set(w for w in h1.split() if len(w) > 4)
+    if not h1_words:
+        return score
+    # Check how many H1 keywords appear in title
+    title_matches = sum(1 for w in h1_words if w in title)
+    score += min(30, title_matches * 10)
+    # Check H1 keywords in body copy opening
+    body_start = body[:200]
+    body_matches = sum(1 for w in h1_words if w in body_start)
+    score += min(30, body_matches * 8)
+    # Reward alignment between title and H1
+    if h1_words and any(w in title for w in h1_words):
+        score += 20
+    return min(100, max(5, score))
+
+def score_multimedia(sig: dict) -> int:
+    # Multimedia usage - images, videos, visual content signals
+    img_count = sig.get("img_count", 0)
+    page_text = sig.get("page_text", "")
+    score = 0
+    # Image count tiers
+    if img_count >= 5:    score += 40
+    elif img_count >= 3:  score += 30
+    elif img_count >= 1:  score += 20
+    else:                 score += 0
+    # Video signals in page text
+    if re.search(r"video|youtube|vimeo|wistia|loom|webinar|watch", page_text):
+        score += 30
+    # Infographic or chart signals
+    if re.search(r"infographic|chart|graph|diagram|illustration", page_text):
+        score += 20
+    # Interactive elements
+    if re.search(r"calculator|quiz|tool|interactive|demo", page_text):
+        score += 10
+    return min(100, max(5, score))
+
+def score_search_intent(sig: dict, goal: str) -> int:
+    # Search intent match - content alignment with the stated page goal
+    page_text = sig.get("page_text", "")
+    h1 = sig.get("h1", "").lower()
+    body = sig.get("body_copy", "").lower()
+    combined = page_text + " " + h1 + " " + body
+
+    # Goal-specific intent keywords
+    intent_keywords = {
+        "lead_generation": ["free", "download", "guide", "ebook", "checklist", "template", "webinar", "form", "subscribe", "contact"],
+        "saas_trial":      ["free trial", "sign up", "get started", "no credit card", "14 day", "30 day", "demo", "software", "platform", "dashboard"],
+        "ecommerce":       ["buy", "shop", "price", "cart", "checkout", "shipping", "order", "product", "discount", "sale"],
+        "newsletter":      ["subscribe", "newsletter", "weekly", "updates", "join", "community", "inbox", "tips", "insights"],
+        "book_demo":       ["demo", "schedule", "calendar", "meeting", "call", "book", "talk to", "sales", "expert", "consultation"],
+        "app_download":    ["download", "app store", "google play", "install", "ios", "android", "mobile app", "get the app"],
+    }
+    keywords = intent_keywords.get(goal, [])
+    if not keywords:
+        return 50
+    matches = sum(1 for kw in keywords if kw in combined)
+    score = min(100, max(5, 10 + (matches * 9)))
+    return score
+
 def score_conversion_intent(sig: dict, goal: str) -> int:
     score = 0
     cta_texts, total_links = sig["cta_texts"], sig["total_links"]
@@ -598,13 +715,19 @@ async def analyze_site(request: Request, body: AuditRequest):
         "trust_resonance":    score_trust_resonance(sig),
         "mobile_readiness":   score_mobile_readiness(sig, page_speed),
         "semantic_authority": score_semantic_authority(sig),
-        # Deep node scan
+        # Deep node scan - 12 nodes
         "https_ssl":          score_https_ssl(url),
         "title_tag":          score_title_tag(sig),
         "heading_hierarchy":  score_heading_hierarchy(sig),
         "content_depth":      score_content_depth(sig),
         "schema_markup":      score_schema_markup(sig),
         "readability":        score_readability(sig),
+        "meta_description":   score_meta_description(sig),
+        "image_alt_text":     score_image_alt_text(sig),
+        "internal_links":     score_internal_links(sig),
+        "keyword_placement":  score_keyword_placement(sig),
+        "multimedia":         score_multimedia(sig),
+        "search_intent":      score_search_intent(sig, goal),
     }
     if page_speed is not None:
         scores["page_speed"] = page_speed
