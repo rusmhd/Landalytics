@@ -8,24 +8,24 @@ const GOAL_GROUPS = [
   {
     group: 'Optimization',
     goals: [
-      { value: 'cro',                       label: 'Conversion Rate Optimization', icon: '📈' },
-      { value: 'landing_page_optimization', label: 'Landing Page Optimization',    icon: '🎯' },
-      { value: 'website_optimization',      label: 'Website Optimization',         icon: '🛠️' },
-      { value: 'website_redesign',          label: 'Website Redesign',             icon: '🎨' },
-      { value: 'ab_testing',                label: 'A/B Testing',                  icon: '🔬' },
-      { value: 'multivariate_testing',      label: 'Multivariate Testing',         icon: '🧪' },
-      { value: 'personalization',           label: 'Website Personalization',      icon: '✨' },
+      { value: 'cro',                       label: 'Conversion Rate Optimization', icon: '📈', desc: 'Maximize the % of visitors who take action' },
+      { value: 'landing_page_optimization', label: 'Landing Page Optimization',    icon: '🎯', desc: 'Improve a single page built for one goal' },
+      { value: 'website_optimization',      label: 'Website Optimization',         icon: '🛠️', desc: 'Speed, SEO, UX and conversion holistically' },
+      { value: 'website_redesign',          label: 'Website Redesign',             icon: '🎨', desc: 'Audit before or after a full redesign' },
+      { value: 'ab_testing',                label: 'A/B Testing',                  icon: '🔬', desc: 'Identify elements worth split testing' },
+      { value: 'multivariate_testing',      label: 'Multivariate Testing',         icon: '🧪', desc: 'Find winning combinations of page elements' },
+      { value: 'personalization',           label: 'Website Personalization',      icon: '✨', desc: 'Spot opportunities to tailor content per user' },
     ],
   },
   {
     group: 'Growth & Retention',
     goals: [
-      { value: 'grow_traffic',       label: 'Grow Website Traffic',              icon: '🚀' },
-      { value: 'customer_engagement',label: 'Customer Engagement',               icon: '💬' },
-      { value: 'cx_optimization',    label: 'Customer Experience Optimization',  icon: '⭐' },
-      { value: 'customer_retention', label: 'Customer Retention',                icon: '🔄' },
-      { value: 'cart_abandonment',   label: 'Cart Abandonment',                  icon: '🛒' },
-      { value: 'feature_rollout',    label: 'Feature Rollout',                   icon: '🚢' },
+      { value: 'grow_traffic',       label: 'Grow Website Traffic',              icon: '🚀', desc: 'On-page SEO signals that drive organic reach' },
+      { value: 'customer_engagement',label: 'Customer Engagement',               icon: '💬', desc: 'Content and hooks that keep users on-page' },
+      { value: 'cx_optimization',    label: 'Customer Experience Optimization',  icon: '⭐', desc: 'Reduce friction across the full user journey' },
+      { value: 'customer_retention', label: 'Customer Retention',                icon: '🔄', desc: 'Signals that bring existing customers back' },
+      { value: 'cart_abandonment',   label: 'Cart Abandonment',                  icon: '🛒', desc: 'Fix the leaks between browse and purchase' },
+      { value: 'feature_rollout',    label: 'Feature Rollout',                   icon: '🚢', desc: 'Communicate new features clearly and drive adoption' },
     ],
   },
 ];
@@ -174,9 +174,7 @@ const GoalSelector = ({ goal, setGoal }) => {
             <span style={{ fontSize: 18 }}>{selected.icon}</span>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selected.label}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>
-                {GOAL_GROUPS.find(g => g.goals.some(gl => gl.value === goal))?.group || ''}
-              </div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2, fontStyle: 'italic' }}>{selected.desc}</div>
             </div>
           </div>
           <span style={{ color: '#2563EB', fontSize: 10, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
@@ -212,19 +210,22 @@ const GoalSelector = ({ goal, setGoal }) => {
                         padding: '10px 16px', background: g.value === goal ? 'rgba(37,99,235,0.15)' : 'transparent',
                         border: 'none', borderRight: '1px solid rgba(255,255,255,0.03)',
                         borderBottom: '1px solid rgba(255,255,255,0.03)',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                         transition: 'background 0.15s', textAlign: 'left',
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.1)'}
                       onMouseLeave={e => e.currentTarget.style.background = g.value === goal ? 'rgba(37,99,235,0.15)' : 'transparent'}
                     >
-                      <span style={{ fontSize: 14 }}>{g.icon}</span>
-                      <span style={{
-                        fontSize: 11, fontWeight: g.value === goal ? 800 : 600,
-                        color: g.value === goal ? '#93C5FD' : 'rgba(255,255,255,0.45)',
-                        letterSpacing: '0.02em',
-                      }}>{g.label}</span>
-                      {g.value === goal && <span style={{ marginLeft: 'auto', color: '#2563EB', fontSize: 10 }}>✓</span>}
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{g.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 11, fontWeight: g.value === goal ? 800 : 600,
+                          color: g.value === goal ? '#93C5FD' : 'rgba(255,255,255,0.7)',
+                          letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>{g.label}</div>
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.desc}</div>
+                      </div>
+                      {g.value === goal && <span style={{ flexShrink: 0, color: '#2563EB', fontSize: 11 }}>✓</span>}
                     </button>
                   ))}
                 </div>
