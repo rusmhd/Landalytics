@@ -146,6 +146,22 @@ const LoadingScreen = ({ status }) => {
         <div style={{ fontSize: 10, fontWeight: 800, color: '#2563EB', letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: 8 }}>{status}{dots}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>Neural capture in progress</div>
       </div>
+      {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '32px 24px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 40 }}>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginBottom: 10, letterSpacing: '0.05em' }}>
+          © {new Date().getFullYear()} Landalytics. All rights reserved.
+        </p>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          {[['Privacy Policy','privacy'],['Terms of Use','terms']].map(([label, pg]) => (
+            <button key={pg} onClick={() => onNav(pg)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em',
+              textTransform: 'uppercase', fontWeight: 700,
+              textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.1)',
+            }}>{label}</button>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 };
@@ -238,7 +254,7 @@ const GoalSelector = ({ goal, setGoal }) => {
   );
 };
 
-const HomePage = ({ onScanComplete }) => {
+const HomePage = ({ onScanComplete, onNav }) => {
   const [url, setUrl] = useState('');
   const [goal, setGoal] = useState('cro');
   const [loading, setLoading] = useState(false);
@@ -323,7 +339,7 @@ const HomePage = ({ onScanComplete }) => {
   );
 };
 
-const ReportPage = ({ scores, ai, url, goal, onHome }) => {
+const ReportPage = ({ onNav, scores, ai, url, goal, onHome }) => {
   const nodes = [
     { t: 'HTTPS / SSL',         s: scores?.https_ssl         || 0, d: (scores?.https_ssl         ||0)>=65 ? 'Secure connection confirmed'        : 'SSL certificate not detected' },
     { t: 'Title Tag Quality',   s: scores?.title_tag         || 0, d: (scores?.title_tag         ||0)>=65 ? 'Title tag well optimised'           : 'Title tag needs improvement' },
@@ -429,13 +445,231 @@ const ReportPage = ({ scores, ai, url, goal, onHome }) => {
           )}
         </div>
       </div>
+      {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '32px 24px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 40 }}>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginBottom: 10, letterSpacing: '0.05em' }}>
+          © {new Date().getFullYear()} Landalytics. All rights reserved.
+        </p>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          {[['Privacy Policy','privacy'],['Terms of Use','terms']].map(([label, pg]) => (
+            <button key={pg} onClick={() => onNav && onNav(pg)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em',
+              textTransform: 'uppercase', fontWeight: 700,
+              textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.1)',
+            }}>{label}</button>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 };
 
+
+// ---------------------------------------------------------------------------
+// Shared legal page shell
+// ---------------------------------------------------------------------------
+const LegalPage = ({ title, onHome, children }) => (
+  <div style={{ minHeight: '100vh', background: '#060E1A', color: '#e2e8f0', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px 64px' }}>
+      {/* Back */}
+      <button onClick={onHome} style={{
+        background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
+        gap: 6, color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700,
+        textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 40,
+      }}>← Back to Landalytics</button>
+
+      {/* Header */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ fontSize: 9, fontWeight: 900, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: 12 }}>
+          Legal
+        </div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, fontStyle: 'italic', color: '#fff', margin: 0 }}>{title}</h1>
+        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
+          Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </p>
+      </div>
+
+      {/* Content */}
+      <div style={{ fontSize: 14, lineHeight: 1.8, color: 'rgba(255,255,255,0.65)' }}>
+        {children}
+      </div>
+
+      {/* Footer */}
+      <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>© {new Date().getFullYear()} Landalytics. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+);
+
+const Section = ({ title, children }) => (
+  <div style={{ marginBottom: 32 }}>
+    <h2 style={{ fontSize: 14, fontWeight: 800, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>{title}</h2>
+    {children}
+  </div>
+);
+
+const P = ({ children }) => <p style={{ marginBottom: 12 }}>{children}</p>;
+const Li = ({ children }) => <li style={{ marginBottom: 6 }}>{children}</li>;
+
+// ---------------------------------------------------------------------------
+// Privacy Policy
+// ---------------------------------------------------------------------------
+const PrivacyPage = ({ onHome }) => (
+  <LegalPage title="Privacy Policy" onHome={onHome}>
+    <Section title="Overview">
+      <P>Landalytics ("we", "our", or "us") operates the Landalytics website and landing page audit service. This Privacy Policy explains how we collect, use, and protect information when you use our service. By using Landalytics, you agree to the practices described in this policy.</P>
+    </Section>
+
+    <Section title="Information We Collect">
+      <P><strong style={{color:'#e2e8f0'}}>Information you provide:</strong></P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li>URLs you submit for analysis</Li>
+        <Li>Your selected audit goal</Li>
+        <Li>Any contact information you voluntarily provide (e.g. via email)</Li>
+      </ul>
+      <P><strong style={{color:'#e2e8f0'}}>Information collected automatically:</strong></P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li>IP address (used for rate limiting — not stored long-term)</Li>
+        <Li>Browser type and version</Li>
+        <Li>Pages visited and time spent on site</Li>
+        <Li>Referring URLs</Li>
+      </ul>
+    </Section>
+
+    <Section title="How We Use Your Information">
+      <P>We use the information collected to:</P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li>Perform the requested landing page analysis</Li>
+        <Li>Prevent abuse and enforce rate limits</Li>
+        <Li>Improve the accuracy and quality of our analysis</Li>
+        <Li>Communicate with you if you contact us directly</Li>
+        <Li>Monitor and maintain service performance</Li>
+      </ul>
+      <P>We do not sell, rent, or share your personal information with third parties for marketing purposes.</P>
+    </Section>
+
+    <Section title="Third-Party Services">
+      <P>Landalytics uses the following third-party services to deliver its functionality. Each has its own privacy policy:</P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li><strong style={{color:'#e2e8f0'}}>Jina AI Reader (r.jina.ai)</strong> — used to fetch and process the URLs you submit. Your submitted URLs are sent to Jina's servers for processing.</Li>
+        <Li><strong style={{color:'#e2e8f0'}}>Groq API</strong> — used to generate AI-powered analysis. Page content extracted from your URL may be sent to Groq for processing.</Li>
+        <Li><strong style={{color:'#e2e8f0'}}>Google PageSpeed Insights API</strong> — used to measure page performance. Your submitted URL is sent to Google's servers.</Li>
+        <Li><strong style={{color:'#e2e8f0'}}>Render</strong> — our cloud hosting provider. Infrastructure and server logs are managed by Render.</Li>
+      </ul>
+    </Section>
+
+    <Section title="Data Retention">
+      <P>We do not maintain a persistent database of user submissions. URLs and analysis results are processed in real-time and are not stored beyond the duration of your session. Server logs may be retained for up to 30 days for security and debugging purposes.</P>
+    </Section>
+
+    <Section title="Cookies">
+      <P>Landalytics does not use tracking cookies or advertising cookies. We may use essential session cookies required for the site to function. We do not use Google Analytics, Facebook Pixel, or any behavioural tracking tools.</P>
+    </Section>
+
+    <Section title="Security">
+      <P>We implement industry-standard security measures including HTTPS encryption, rate limiting, input validation, and SSRF prevention. However, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security of data transmitted to our service.</P>
+    </Section>
+
+    <Section title="Children's Privacy">
+      <P>Landalytics is not directed at children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have inadvertently collected such information, please contact us immediately.</P>
+    </Section>
+
+    <Section title="Your Rights">
+      <P>Depending on your jurisdiction, you may have rights regarding your personal data including the right to access, correct, or delete information we hold about you. To exercise these rights, contact us at the email below.</P>
+    </Section>
+
+    <Section title="Changes to This Policy">
+      <P>We may update this Privacy Policy from time to time. We will notify users of material changes by updating the "Last updated" date at the top of this page. Continued use of the service after changes constitutes acceptance of the updated policy.</P>
+    </Section>
+
+    <Section title="Contact Us">
+      <P>If you have questions about this Privacy Policy, please contact us at: <strong style={{color:'#93C5FD'}}>legal@landalytics.com</strong></P>
+    </Section>
+  </LegalPage>
+);
+
+// ---------------------------------------------------------------------------
+// Terms of Use
+// ---------------------------------------------------------------------------
+const TermsPage = ({ onHome }) => (
+  <LegalPage title="Terms of Use" onHome={onHome}>
+    <Section title="Acceptance of Terms">
+      <P>By accessing or using Landalytics ("Service"), you agree to be bound by these Terms of Use ("Terms"). If you do not agree to these Terms, do not use the Service. These Terms apply to all users of the Service.</P>
+    </Section>
+
+    <Section title="Description of Service">
+      <P>Landalytics provides automated landing page analysis using AI-powered tools. The Service analyzes publicly accessible web pages and generates reports covering conversion readiness, SEO signals, trust indicators, and strategic recommendations. Landalytics is an analytical tool — it does not modify, access private areas of, or interact with the websites it analyzes beyond reading their publicly accessible content.</P>
+    </Section>
+
+    <Section title="Acceptable Use">
+      <P>You agree to use the Service only for lawful purposes. You must not:</P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li>Submit URLs for websites you do not own or have authorization to analyze</Li>
+        <Li>Attempt to circumvent rate limits or access controls</Li>
+        <Li>Use the Service to analyze URLs for the purpose of competitive intelligence in a manner that violates applicable law</Li>
+        <Li>Submit malicious URLs, URLs pointing to illegal content, or URLs designed to exploit the Service</Li>
+        <Li>Use automated scripts or bots to abuse the Service</Li>
+        <Li>Reverse engineer, decompile, or attempt to extract the source code of the Service</Li>
+        <Li>Resell or commercially redistribute analysis reports without written permission</Li>
+      </ul>
+    </Section>
+
+    <Section title="Intellectual Property">
+      <P>All content, design, code, and intellectual property of the Landalytics platform — including but not limited to the scoring methodology, SWOT framework, Conversion Readiness Index, and visual design — is owned by Landalytics and protected by applicable intellectual property laws.</P>
+      <P>Analysis reports generated by the Service are provided for your personal or internal business use. You may not resell, license, or redistribute reports without prior written consent.</P>
+    </Section>
+
+    <Section title="Disclaimer of Warranties">
+      <P>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. LANDALYTICS DOES NOT WARRANT THAT:</P>
+      <ul style={{ paddingLeft: 20, marginBottom: 12 }}>
+        <Li>The Service will be uninterrupted, error-free, or secure</Li>
+        <Li>Analysis results will be accurate, complete, or suitable for any particular purpose</Li>
+        <Li>The Service will meet your specific business requirements</Li>
+        <Li>Any defects will be corrected</Li>
+      </ul>
+      <P>AI-generated analysis is provided for informational purposes only. You should not rely solely on Landalytics reports for business-critical decisions without independent verification.</P>
+    </Section>
+
+    <Section title="Limitation of Liability">
+      <P>TO THE MAXIMUM EXTENT PERMITTED BY LAW, LANDALYTICS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES — INCLUDING LOSS OF PROFITS, DATA, OR BUSINESS OPPORTUNITIES — ARISING FROM YOUR USE OF OR INABILITY TO USE THE SERVICE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</P>
+      <P>Our total liability to you for any claims arising from use of the Service shall not exceed the amount you paid for the Service in the 12 months preceding the claim, or $100, whichever is greater.</P>
+    </Section>
+
+    <Section title="Third-Party Services">
+      <P>The Service relies on third-party APIs and infrastructure. We are not responsible for the availability, accuracy, or actions of third-party services including Jina AI, Groq, Google, or Render. Use of the Service is subject to their respective terms and policies.</P>
+    </Section>
+
+    <Section title="Rate Limits and Fair Use">
+      <P>To ensure service availability for all users, Landalytics enforces rate limits on API usage. Attempting to circumvent these limits is a violation of these Terms and may result in suspension of access.</P>
+    </Section>
+
+    <Section title="Termination">
+      <P>We reserve the right to suspend or terminate your access to the Service at any time, with or without notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.</P>
+    </Section>
+
+    <Section title="Governing Law">
+      <P>These Terms shall be governed by and construed in accordance with applicable law. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts in the applicable jurisdiction.</P>
+    </Section>
+
+    <Section title="Changes to Terms">
+      <P>We reserve the right to modify these Terms at any time. Material changes will be communicated by updating the "Last updated" date. Continued use of the Service following changes constitutes your acceptance of the revised Terms.</P>
+    </Section>
+
+    <Section title="Contact Us">
+      <P>For questions about these Terms, contact us at: <strong style={{color:'#93C5FD'}}>legal@landalytics.com</strong></P>
+    </Section>
+  </LegalPage>
+);
+
 export default function App() {
   const [report, setReport] = useState(null);
+  const [page, setPage] = useState('home'); // 'home' | 'privacy' | 'terms'
+
+  if (page === 'privacy') return <PrivacyPage onHome={() => { setPage('home'); setReport(null); }} />;
+  if (page === 'terms')   return <TermsPage   onHome={() => { setPage('home'); setReport(null); }} />;
   return report
-    ? <ReportPage {...report} onHome={() => setReport(null)} />
-    : <HomePage onScanComplete={setReport} />;
+    ? <ReportPage {...report} onHome={() => setReport(null)} onNav={setPage} />
+    : <HomePage onScanComplete={setReport} onNav={setPage} />;
 }
