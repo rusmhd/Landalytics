@@ -146,22 +146,6 @@ const LoadingScreen = ({ status }) => {
         <div style={{ fontSize: 10, fontWeight: 800, color: '#2563EB', letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: 8 }}>{status}{dots}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>Neural capture in progress</div>
       </div>
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: '32px 24px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 40 }}>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginBottom: 10, letterSpacing: '0.05em' }}>
-          © {new Date().getFullYear()} Landalytics. All rights reserved.
-        </p>
-        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
-          {[['Privacy Policy','privacy'],['Terms of Use','terms']].map(([label, pg]) => (
-            <button key={pg} onClick={() => onNav(pg)} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em',
-              textTransform: 'uppercase', fontWeight: 700,
-              textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.1)',
-            }}>{label}</button>
-          ))}
-        </div>
-      </footer>
     </div>
   );
 };
@@ -335,6 +319,30 @@ const HomePage = ({ onScanComplete, onNav }) => {
           ))}
         </div>
       </div>
+
+      {/* Footer — always at bottom of home page */}
+      <footer style={{
+        textAlign: 'center', padding: '32px 24px 28px',
+        borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 48,
+      }}>
+        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', marginBottom: 10, letterSpacing: '0.05em' }}>
+          © {new Date().getFullYear()} Landalytics. All rights reserved.
+        </p>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          {[['Privacy Policy','privacy'],['Terms of Use','terms']].map(([label, pg]) => (
+            <button key={pg} onClick={() => onNav(pg)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em',
+              textTransform: 'uppercase', fontWeight: 700,
+              textDecoration: 'underline', textDecorationColor: 'rgba(37,99,235,0.3)',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#93C5FD'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
+            >{label}</button>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 };
