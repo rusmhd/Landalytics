@@ -1096,7 +1096,7 @@ async def analyze_site(request: Request, body: AuditRequest):
                 f"H1: {clean(sig['h1'])}\n"
                 f"H2s: {clean(', '.join(sig['h2s'])) or 'None'}\n"
                 f"Meta Description: {clean(sig['meta_description']) or 'None'}\n"
-                f"Body Copy: {clean(sig['body_copy'][:400]) or 'N/A'}\n"
+                f"Body Copy: {clean(sig['body_copy'][:1500]) or 'N/A'}\n"
                 f"CTAs: {clean(', '.join(sig['cta_texts'])) or 'None'}\n"
                 f"Nav Links: {clean(', '.join(sig['nav_links'])) or 'None'}\n"
                 f"Images: {sig['img_count']} (alt texts: {clean(', '.join(sig['alt_texts'][:3])) or 'missing'})\n"
@@ -1104,14 +1104,18 @@ async def analyze_site(request: Request, body: AuditRequest):
                 f"Scores — Conversion: {scores['conversion_intent']}, Trust: {scores['trust_resonance']}, "
                 f"Mobile: {scores['mobile_readiness']}, Semantic: {scores['semantic_authority']}"
                 + (f", PageSpeed: {page_speed}" if page_speed else "") + "\n\n"
-                "Return JSON with EXACTLY these keys:\n"
-                '"swot": {"strengths":[{"point":"...","evidence":"..."}],'
-                '"weaknesses":[{"point":"...","fix_suggestion":"..."}],'
-                '"opportunities":[{"point":"...","potential_impact":"..."}],'
-                '"threats":[{"point":"...","mitigation_strategy":"..."}]},'
-                '"roadmap":[{"task":"...","tech_reason":"...","psych_impact":"...","success_metric":"..."}],'
-                '"final_verdict":{"overall_readiness":"short phrase","single_most_impactful_change":"one sentence"}\n\n'
-                f"Be specific to this site and its {goal_label} goal. No generic advice."
+                "Return JSON with EXACTLY these keys and counts:\n"
+                '"swot": {'
+                '  "strengths": 4 items [{"point":"specific strength","evidence":"concrete proof from page"}],'
+                '  "weaknesses": 4 items [{"point":"specific weakness","fix_suggestion":"exact actionable fix"}],'
+                '  "opportunities": 3 items [{"point":"specific opportunity","potential_impact":"measurable outcome"}],'
+                '  "threats": 3 items [{"point":"specific threat","mitigation_strategy":"concrete mitigation"}]'
+                '},'
+                '"roadmap": 5 items [{"task":"specific action","tech_reason":"why technically","psych_impact":"user psychology effect","success_metric":"measurable KPI"}],'
+                '"final_verdict":{"overall_readiness":"2-4 word phrase","single_most_impactful_change":"one concrete sentence"}'
+                "\n\nRules: Be hyper-specific to this exact site. Reference actual page content. "
+                "Each point must be unique — no overlap between quadrants. "
+                f"Goal context: {goal_label} — {goal_ctx[:200]}"
             )
 
             def run_groq(prompt_text: str) -> dict:
@@ -1121,7 +1125,7 @@ async def analyze_site(request: Request, body: AuditRequest):
                     messages=[{"role": "user", "content": prompt_text}],
                     response_format={"type": "json_object"},
                     temperature=0,
-                    max_tokens=1500,
+                    max_tokens=2500,
                 )
                 raw = completion.choices[0].message.content
                 # Strip markdown code fences if model wraps output
