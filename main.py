@@ -169,7 +169,7 @@ class AuditRequest(BaseModel):
     model_config = {"extra": "forbid"}  # reject unexpected fields
 
     url: str
-    goal: str = "lead_generation"
+    goal: str = "cro"
 
     @field_validator("url")
     @classmethod
@@ -236,39 +236,34 @@ GOAL_CONTEXT = {
         "most likely to impact conversion when varied (headlines, CTAs, images, social proof).",
 
     "cart_abandonment":
-        "Focus on checkout friction, trust signals at point of purchase, exit-intent triggers, "
-        "urgency/scarcity signals, cart visibility, saved cart features, and retargeting hooks. "
-        "Identify the exact moments where users are likely to drop off before completing purchase.",
+        "Focus on checkout friction, trust signals at point of purchase, urgency/scarcity signals, "
+        "cart visibility, and retargeting hooks. Identify the exact moments where users are likely "
+        "to drop off before completing purchase.",
 
     "cro":
         "Focus on the full conversion funnel — above-fold clarity, value proposition strength, "
         "CTA placement and copy, form friction, trust architecture, social proof density, and "
         "page load performance. Identify the single highest-impact change to improve conversion rate.",
 
-    "customer_data_platform":
-        "Focus on data capture mechanisms (forms, sign-ups, cookie consent), privacy compliance signals, "
-        "integration touchpoints, and how well the page communicates data value exchange to users. "
-        "Identify gaps in first-party data collection and consent UX.",
-
     "customer_engagement":
         "Focus on interactive elements, content depth, scroll depth triggers, community signals, "
-        "comment/feedback mechanisms, newsletter CTAs, and personalisation hooks. "
+        "newsletter CTAs, and personalisation hooks. "
         "Identify what keeps users engaged beyond the first visit.",
 
     "cx_optimization":
         "Focus on overall user journey clarity, navigation intuitiveness, support accessibility, "
-        "error state handling, loading performance, accessibility compliance, and emotional tone. "
+        "loading performance, and emotional tone of the copy. "
         "Identify friction points that degrade the end-to-end customer experience.",
 
     "customer_retention":
         "Focus on loyalty signals, member/subscriber benefits visibility, re-engagement CTAs, "
-        "account value communication, community belonging cues, and churn-prevention copy. "
+        "account value communication, and churn-prevention copy. "
         "Identify what would make an existing customer return vs. leave.",
 
     "feature_rollout":
         "Focus on feature announcement clarity, benefit-led messaging, adoption CTAs, "
-        "changelog/update visibility, tutorial or onboarding links, and user education hooks. "
-        "Identify how effectively the page communicates the new feature value to existing users.",
+        "changelog/update visibility, and user education hooks. "
+        "Identify how effectively the page communicates new feature value to existing users.",
 
     "grow_traffic":
         "Focus on SEO fundamentals — title tag, meta description, heading hierarchy, keyword density, "
@@ -280,50 +275,10 @@ GOAL_CONTEXT = {
         "social proof proximity to CTA, page speed, and message-match with likely traffic sources. "
         "Identify the single change most likely to lift landing page conversion rate.",
 
-    "mobile_ab_testing":
-        "Focus on mobile-specific UX — thumb-zone CTA placement, font legibility, tap target sizes, "
-        "swipe/scroll behaviour, mobile form friction, and app store deep-link visibility. "
-        "Identify elements that should be tested specifically for mobile users.",
-
     "multivariate_testing":
         "Focus on identifying multiple independent page elements that each have meaningful conversion "
         "impact — headlines, images, CTAs, social proof blocks, pricing displays. "
         "Assess which combinations of changes are worth testing simultaneously.",
-
-    "push_notifications":
-        "Focus on opt-in prompt placement and timing, permission request copy, value proposition for "
-        "subscribing, notification preference UI, and GDPR/consent compliance. "
-        "Identify how to maximise push notification opt-in rates without damaging UX.",
-
-    "server_side_testing":
-        "Focus on backend-rendered elements suitable for server-side experiments — pricing logic, "
-        "personalisation rules, recommendation algorithms, page variants, and feature flags. "
-        "Identify which data-driven decisions would benefit most from controlled server-side testing.",
-
-    "session_recording":
-        "Focus on identifying high-friction UX areas — confusing navigation, rage-click zones, "
-        "dead clicks, scroll depth drop-offs, and form abandonment points. "
-        "Identify the page areas most likely to reveal user confusion in session recordings.",
-
-    "usability_testing":
-        "Focus on task completion clarity, navigation discoverability, CTA labelling, error prevention, "
-        "cognitive load, and accessibility. Identify the top 3 usability issues a first-time visitor "
-        "would encounter trying to complete the page goal.",
-
-    "visitor_behavior":
-        "Focus on content hierarchy, scroll-depth signals, click-through patterns, internal link "
-        "structure, and engagement hooks. Identify which page sections are likely to get the most "
-        "attention and which are likely to be ignored based on layout and content.",
-
-    "form_analytics":
-        "Focus on form design, field count, field labelling, validation feedback, progress indicators, "
-        "error messaging, and form abandonment triggers. Identify every point of friction in the "
-        "form completion journey and rank by likely drop-off impact.",
-
-    "heatmaps":
-        "Focus on visual hierarchy, above-fold content density, CTA visibility, image placement, "
-        "and whitespace usage. Identify which elements are likely to attract the most clicks and "
-        "attention, and which important elements are likely to be missed by users.",
 
     "website_optimization":
         "Focus on technical performance (speed, mobile, Core Web Vitals signals), content quality, "
@@ -339,11 +294,6 @@ GOAL_CONTEXT = {
         "Focus on brand clarity, visual consistency, navigation architecture, content hierarchy, "
         "mobile experience, page speed baseline, and current conversion performance. "
         "Identify what must be preserved, what must be fixed, and what should be reimagined.",
-
-    "website_surveys":
-        "Focus on survey trigger placement, exit-intent opportunities, post-conversion survey hooks, "
-        "NPS/CSAT signal collection points, and non-intrusive feedback mechanisms. "
-        "Identify the optimal moments and placements to collect user feedback without hurting conversion.",
 }
 
 # ---------------------------------------------------------------------------
@@ -382,147 +332,245 @@ def get_pagespeed_score(url: str) -> Optional[int]:
     return None
 
 # ---------------------------------------------------------------------------
-# Scraper — uses Jina AI Reader to bypass Render free-tier network restrictions.
-# Jina fetches and renders the page on their servers, returning clean markdown.
+# Scraper — Jina AI Reader (primary) + direct httpx (fallback)
+# Strategy:
+#   1. Try Jina JSON mode — structured, reliable, handles JS-rendered pages
+#   2. If Jina returns thin content (<200 words), retry with direct httpx fetch
+#   3. Return whichever result has more content
 # SSRF is already prevented at the validation layer before this is called.
 # ---------------------------------------------------------------------------
-def scrape_page(url: str) -> str:
+
+# Jina free tier rate limit: ~20 req/min. We enforce a conservative limit
+# server-side to avoid hitting it and burning retries.
+_jina_last_call: float = 0.0
+_JINA_MIN_INTERVAL = 3.0  # minimum seconds between Jina calls
+
+def scrape_via_jina(url: str) -> dict:
     """
-    Fetch page content via Jina AI Reader (r.jina.ai).
-    Returns clean markdown text — handles JS-rendered pages automatically.
-    Falls back to empty string on failure so the audit degrades gracefully.
+    Fetch page via Jina Reader JSON mode.
+    Returns structured dict with title, description, content, links.
+    JSON mode is more reliable than markdown for metadata extraction.
     """
+    global _jina_last_call
+    # Enforce rate limit — sleep if called too fast
+    elapsed = time.time() - _jina_last_call
+    if elapsed < _JINA_MIN_INTERVAL:
+        time.sleep(_JINA_MIN_INTERVAL - elapsed)
+    _jina_last_call = time.time()
+
     jina_url = f"https://r.jina.ai/{url}"
     headers = {
-        "Accept": "text/plain",
+        "Accept": "application/json",
         "User-Agent": "Landalytics/1.0",
-        # Request extended metadata (title, description) in the response
-        "X-Return-Format": "markdown",
+        "X-Return-Format": "json",          # structured JSON — much better than markdown
+        "X-With-Links-Summary": "true",     # include all links separately
+        "X-With-Images-Summary": "true",    # include image metadata
     }
     try:
         with httpx.Client(timeout=25.0, follow_redirects=True, max_redirects=3) as client:
             r = client.get(jina_url, headers=headers)
             if r.status_code == 200:
-                # Cap at 1MB — markdown is much denser than raw HTML
-                return r.text[:1_000_000]
+                data = r.json()
+                # Jina JSON wraps content in data.data
+                return data.get("data") or data
             print(f"[Jina error] status {r.status_code}")
     except Exception as e:
         print(f"[Jina error] {e}")
+    return {}
+
+def scrape_via_httpx(url: str) -> str:
+    """
+    Direct fetch fallback — works when Render network allows it.
+    Returns raw HTML string, empty on failure.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
+    try:
+        with httpx.Client(timeout=15.0, follow_redirects=True, max_redirects=5, headers=headers) as client:
+            r = client.get(url)
+            if r.status_code == 200:
+                return r.text[:5_000_000]
+    except Exception as e:
+        print(f"[httpx fallback error] {e}")
     return ""
 
-# ---------------------------------------------------------------------------
-# Signal extraction — parses Jina markdown instead of raw HTML.
-# Jina returns structured markdown so we use regex patterns rather than
-# BeautifulSoup HTML parsing.
-# ---------------------------------------------------------------------------
-def extract_signals(markdown: str) -> dict:
+def scrape_page(url: str) -> tuple[dict, str]:
     """
-    Extract CRO-relevant signals from Jina markdown output.
-    Jina formats the page as clean markdown with headings, links, and body text.
+    Primary scraper — tries Jina JSON first, falls back to direct httpx
+    if Jina returns thin content (under 200 words).
+    Returns (jina_data_dict, raw_html_string) — one will be populated.
     """
-    if not markdown:
+    jina_data = scrape_via_jina(url)
+
+    # Check content richness from Jina
+    jina_content = jina_data.get("content", "") or jina_data.get("text", "") or ""
+    word_count = len(jina_content.split())
+
+    if word_count >= 200:
+        print(f"[Scraper] Jina OK — {word_count} words")
+        return jina_data, ""
+
+    # Thin content — try direct httpx as fallback
+    print(f"[Scraper] Jina thin ({word_count} words) — trying httpx fallback")
+    html = scrape_via_httpx(url)
+    if html:
+        print(f"[Scraper] httpx fallback OK — {len(html)} chars")
+        return jina_data, html  # return both; extract_signals will use whichever is richer
+
+    print(f"[Scraper] Both scrapers returned thin content")
+    return jina_data, ""
+
+# ---------------------------------------------------------------------------
+# Signal extraction — handles Jina JSON (primary) and raw HTML (fallback).
+# Jina JSON gives us clean structured data; BeautifulSoup handles HTML fallback.
+# ---------------------------------------------------------------------------
+def _signals_from_html(html: str) -> dict:
+    """Parse raw HTML via BeautifulSoup when Jina data is thin."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+
+    h1      = soup.find("h1")
+    h1_text = h1.get_text(strip=True)[:120] if h1 else "No H1 Found"
+    h2s     = [t.get_text(strip=True)[:80] for t in soup.find_all("h2")][:5]
+    h3s     = [t.get_text(strip=True)[:80] for t in soup.find_all("h3")][:5]
+    title_t = soup.find("title")
+    title   = title_t.get_text(strip=True)[:120] if title_t else h1_text
+    meta_d  = soup.find("meta", attrs={"name": "description"})
+    meta    = meta_d.get("content", "")[:200] if meta_d else ""
+    paras   = [p.get_text(strip=True) for p in soup.find_all("p") if len(p.get_text(strip=True)) > 40][:5]
+    body    = " | ".join(paras)[:600]
+    buttons = soup.find_all(["button", "a"])
+    ctas    = list({b.get_text(strip=True) for b in buttons if 2 < len(b.get_text(strip=True)) < 40})[:8]
+    imgs    = soup.find_all("img")
+    alts    = [i.get("alt","").strip()[:80] for i in imgs if i.get("alt","").strip()][:5]
+    has_form = bool(soup.find("form"))
+    inputs  = [i.get("type","text") for i in soup.find_all("input")]
+    nav     = soup.find("nav")
+    nav_lnk = [a.get_text(strip=True)[:40] for a in (nav.find_all("a") if nav else [])][:8]
+    total_l = len(soup.find_all("a"))
+    # Use 8000 chars for richer signal extraction
+    page_text = soup.get_text().lower()[:8000]
+    has_schema = bool(soup.find("script", attrs={"type": "application/ld+json"}))
+    vp = soup.find("meta", attrs={"name": "viewport"})
+    vp_str = vp.get("content","")[:100] if vp else ""
+    return {
+        "h1": h1_text, "h2s": h2s, "h3s": h3s, "title": title,
+        "meta_description": meta, "body_copy": body, "cta_texts": ctas,
+        "img_count": len(imgs), "alt_texts": alts, "has_form": has_form,
+        "input_types": inputs, "nav_links": nav_lnk, "total_links": total_l,
+        "has_schema": has_schema, "has_viewport": bool(vp), "viewport_content": vp_str,
+        "page_text": page_text,
+    }
+
+def extract_signals(jina_data: dict, html: str = "") -> dict:
+    """
+    Extract CRO-relevant signals.
+    Prefers Jina JSON structured data; falls back to HTML parsing if richer.
+    Uses 8000 chars of page text for better signal coverage.
+    """
+    # ── Empty fallback ────────────────────────────────────────────────────────
+    if not jina_data and not html:
         return {
             "h1": "No Content", "h2s": [], "h3s": [], "title": "",
             "meta_description": "", "body_copy": "", "cta_texts": [],
             "img_count": 0, "alt_texts": [], "has_form": False,
             "input_types": [], "nav_links": [], "total_links": 0,
-            "has_schema": False, "has_viewport": True,  # assume mobile-ready if Jina fetched it
+            "has_schema": False, "has_viewport": True,
             "viewport_content": "width=device-width, initial-scale=1",
             "page_text": "",
         }
 
-    lines = markdown.split("\n")
-    text_lower = markdown.lower()
+    # ── Prefer HTML fallback if it has more content than Jina ────────────────
+    jina_content = jina_data.get("content", "") or jina_data.get("text", "") or ""
+    if html and len(html.split()) > len(jina_content.split()):
+        print("[extract_signals] Using HTML fallback — richer content")
+        return _signals_from_html(html)
 
-    # ── Title & meta — Jina puts these at the very top as "Title: ..." / "Description: ..."
-    # Try multiple patterns since Jina's format varies slightly
-    title_text = ""
-    for pat in [r"^Title:\s*(.+)$", r"^# (.+)$"]:
-        m = re.search(pat, markdown, re.MULTILINE | re.IGNORECASE)
-        if m:
-            candidate = m.group(1).strip()[:120]
-            # Skip if it looks like a nav item or very short
-            if len(candidate) > 5:
-                title_text = candidate
-                break
+    # ── Parse Jina JSON structured data ──────────────────────────────────────
+    # Jina JSON mode returns: title, description, content, links[], images[]
+    title_text    = (jina_data.get("title") or "")[:120].strip()
+    meta_desc_txt = (jina_data.get("description") or "")[:200].strip()
+    content_text  = jina_data.get("content") or jina_data.get("text") or ""
 
-    meta_desc_txt = ""
-    for pat in [r"^Description:\s*(.+)$", r"^Meta[- ]?Description:\s*(.+)$", r"^URL Source:.+\nMarkdown Content:\s*\n+(.{80,200})"]:
-        m = re.search(pat, markdown, re.MULTILINE | re.IGNORECASE)
-        if m:
-            meta_desc_txt = m.group(1).strip()[:200]
-            break
+    # Use up to 8000 chars for richer signal coverage
+    text_lower = content_text.lower()[:8000]
 
-    # ── Headings ─────────────────────────────────────────────────────────────
-    # Jina uses standard markdown: # H1, ## H2, ### H3
-    h1_lines  = [l.lstrip("# ").strip()[:120] for l in lines if l.startswith("# ")  and not l.startswith("## ")]
+    # ── Headings — parse from content text ───────────────────────────────────
+    lines     = content_text.split("\n")
+    h1_lines  = [l.lstrip("# ").strip()[:120] for l in lines if l.startswith("# ") and not l.startswith("## ")]
     h2_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("## ") and not l.startswith("### ")]
     h3_lines  = [l.lstrip("# ").strip()[:80]  for l in lines if l.startswith("### ")]
     h1_text   = h1_lines[0] if h1_lines else (title_text if title_text else "No H1 Found")
+    if not title_text:
+        title_text = h1_text if h1_text != "No H1 Found" else ""
 
-    # If title still empty, fall back to h1
-    if not title_text and h1_text != "No H1 Found":
-        title_text = h1_text
-
-    # ── Body copy — meaningful non-heading lines ──────────────────────────────
+    # ── Body copy from content ────────────────────────────────────────────────
     body_lines = [
         l.strip() for l in lines
-        if l.strip()
-        and not l.startswith("#")
-        and not l.startswith("[")
-        and not l.startswith("!")
-        and len(l.strip()) > 40
+        if l.strip() and not l.startswith("#") and not l.startswith("[")
+        and not l.startswith("!") and len(l.strip()) > 40
     ][:5]
     body_copy = " | ".join(body_lines)[:600]
 
-    # ── Links / CTAs — markdown links: [text](url) ───────────────────────────
-    link_texts  = re.findall(r'\[([^\]]{2,40})\]\(https?://[^\)]+\)', markdown)
-    cta_texts   = list(set(link_texts))[:8]
-    total_links = len(re.findall(r'\]\(https?://', markdown))
+    # ── Links — Jina JSON returns a links array ───────────────────────────────
+    links_arr   = jina_data.get("links") or []
+    if isinstance(links_arr, list):
+        # Each link may be a dict {"url":...,"text":...} or just a string
+        link_texts = [
+            (l.get("text","") if isinstance(l, dict) else str(l))[:40]
+            for l in links_arr if (l.get("text","") if isinstance(l, dict) else str(l)).strip()
+        ]
+    else:
+        link_texts = re.findall(r"\[([^\]]{2,40})\]\(https?://[^\)]+\)", content_text)
+    cta_texts   = list(set(t for t in link_texts if 2 < len(t) < 40))[:8]
+    total_links = len(links_arr) if isinstance(links_arr, list) else len(link_texts)
 
-    # ── Images — markdown images: ![alt](url) ────────────────────────────────
-    img_alts  = re.findall(r'!\[([^\]]{1,80})\]', markdown)
-    img_count = len(img_alts)
-    alt_texts = [a.strip() for a in img_alts if a.strip()][:5]
+    # ── Images — Jina JSON returns an images array ───────────────────────────
+    images_arr = jina_data.get("images") or []
+    if isinstance(images_arr, list):
+        alt_texts = [
+            (i.get("alt","") if isinstance(i, dict) else "")[:80]
+            for i in images_arr if (i.get("alt","") if isinstance(i, dict) else "")
+        ][:5]
+        img_count = len(images_arr)
+    else:
+        img_alts  = re.findall(r"!\[([^\]]{1,80})\]", content_text)
+        alt_texts = [a.strip() for a in img_alts if a.strip()][:5]
+        img_count = len(img_alts)
 
-    # ── Form detection — look for form-related keywords in the text ──────────
+    # ── Form detection ────────────────────────────────────────────────────────
     form_kws  = ["subscribe", "sign up", "email", "submit", "get started", "name", "phone", "contact"]
     has_form  = sum(1 for kw in form_kws if kw in text_lower) >= 2
-    # Infer input types from context
     input_types = []
-    if "email" in text_lower:   input_types.append("email")
-    if "phone" in text_lower:   input_types.append("tel")
-    if "name" in text_lower:    input_types.append("text")
+    if "email"    in text_lower: input_types.append("email")
+    if "phone"    in text_lower: input_types.append("tel")
+    if "name"     in text_lower: input_types.append("text")
     if "password" in text_lower: input_types.append("password")
 
-    # ── Nav links — first cluster of short links at top of doc ───────────────
-    nav_pattern = re.findall(r'\[([^\]]{2,30})\]\(', markdown[:1500])
-    nav_links   = list(set(nav_pattern))[:8]
+    # ── Nav links ─────────────────────────────────────────────────────────────
+    nav_links = list(set(t for t in link_texts[:15] if 2 < len(t) < 30))[:8]
 
-    # ── Trust / schema signals — inferred from text ───────────────────────────
-    has_schema   = bool(re.search(r'application/ld\+json|schema\.org', markdown, re.IGNORECASE))
-    # Jina-rendered pages are always viewport-aware (it uses a headless browser)
-    has_viewport    = True
+    # ── Schema / viewport ─────────────────────────────────────────────────────
+    has_schema = bool(re.search(r"schema\.org|ld\+json|itemtype", content_text, re.IGNORECASE))
+    has_viewport     = True  # Jina uses headless browser — always viewport-aware
     viewport_content = "width=device-width, initial-scale=1"
 
     return {
-        "h1": h1_text,
-        "h2s": h2_lines[:5],
-        "h3s": h3_lines[:5],
-        "title": title_text,
-        "meta_description": meta_desc_txt,
-        "body_copy": body_copy,
-        "cta_texts": cta_texts,
-        "img_count": img_count,
-        "alt_texts": alt_texts,
-        "has_form": has_form,
-        "input_types": input_types,
-        "nav_links": nav_links,
-        "total_links": total_links,
-        "has_schema": has_schema,
-        "has_viewport": has_viewport,
+        "h1": h1_text, "h2s": h2_lines[:5], "h3s": h3_lines[:5],
+        "title": title_text, "meta_description": meta_desc_txt,
+        "body_copy": body_copy, "cta_texts": cta_texts,
+        "img_count": img_count, "alt_texts": alt_texts,
+        "has_form": has_form, "input_types": input_types,
+        "nav_links": nav_links, "total_links": total_links,
+        "has_schema": has_schema, "has_viewport": has_viewport,
         "viewport_content": viewport_content,
-        "page_text": text_lower[:2000],
+        "page_text": text_lower,
     }
 
 # ---------------------------------------------------------------------------
@@ -554,14 +602,6 @@ GOAL_WEIGHTS = {
         "search_intent":      1.2,
         "content_depth":      1.1,
         "schema_markup":      0.8,
-    },
-    "customer_data_platform": {
-        "form_analytics":     1.5,  # data capture is the goal (if tracked)
-        "trust_resonance":    1.4,  # privacy/GDPR trust
-        "https_ssl":          1.3,  # security critical for data collection
-        "conversion_intent":  1.2,
-        "multimedia":         0.6,
-        "heading_hierarchy":  0.7,
     },
     "customer_engagement": {
         "content_depth":      1.5,  # depth keeps users engaged
@@ -618,15 +658,6 @@ GOAL_WEIGHTS = {
         "schema_markup":      0.6,
         "internal_links":     0.7,
     },
-    "mobile_ab_testing": {
-        "mobile_readiness":   1.5,  # mobile is everything here
-        "conversion_intent":  1.3,  # mobile CTAs
-        "readability":        1.3,  # mobile readability
-        "multimedia":         1.2,  # mobile visuals
-        "image_alt_text":     1.1,
-        "schema_markup":      0.5,
-        "content_depth":      0.7,
-    },
     "multivariate_testing": {
         "conversion_intent":  1.4,
         "content_depth":      1.3,  # more elements = more test candidates
@@ -634,69 +665,6 @@ GOAL_WEIGHTS = {
         "readability":        1.2,
         "heading_hierarchy":  1.2,
         "schema_markup":      0.5,
-    },
-    "push_notifications": {
-        "conversion_intent":  1.4,  # opt-in CTA
-        "trust_resonance":    1.4,  # trust needed for permission
-        "readability":        1.3,  # clear value prop for subscribing
-        "https_ssl":          1.3,  # required for push
-        "content_depth":      0.7,
-        "schema_markup":      0.5,
-        "keyword_placement":  0.6,
-    },
-    "server_side_testing": {
-        "conversion_intent":  1.3,
-        "content_depth":      1.3,
-        "search_intent":      1.2,
-        "readability":        1.2,
-        "schema_markup":      0.6,
-        "image_alt_text":     0.7,
-    },
-    "session_recording": {
-        "internal_links":     1.5,  # navigation paths are recorded
-        "readability":        1.4,  # scroll/reading patterns
-        "content_depth":      1.3,  # long pages = more session data
-        "multimedia":         1.2,  # interaction with visuals
-        "conversion_intent":  1.2,
-        "schema_markup":      0.5,
-        "meta_description":   0.6,
-    },
-    "usability_testing": {
-        "readability":        1.5,  # usability = clarity
-        "internal_links":     1.4,  # navigation discoverability
-        "heading_hierarchy":  1.3,  # structure aids usability
-        "conversion_intent":  1.2,  # task completion
-        "mobile_readiness":   1.2,
-        "schema_markup":      0.5,
-        "keyword_placement":  0.6,
-    },
-    "visitor_behavior": {
-        "content_depth":      1.5,  # behaviour varies with content length
-        "internal_links":     1.4,  # click paths
-        "multimedia":         1.3,  # visual interaction
-        "heading_hierarchy":  1.2,  # scroll anchors
-        "readability":        1.2,
-        "schema_markup":      0.5,
-        "https_ssl":          0.7,
-    },
-    "form_analytics": {
-        "conversion_intent":  1.5,  # form completion is the goal
-        "readability":        1.4,  # form label clarity
-        "trust_resonance":    1.3,  # trust reduces form abandonment
-        "mobile_readiness":   1.2,  # mobile form UX
-        "content_depth":      0.7,
-        "multimedia":         0.6,
-        "schema_markup":      0.5,
-    },
-    "heatmaps": {
-        "multimedia":         1.5,  # visual elements attract clicks
-        "internal_links":     1.4,  # link click patterns
-        "content_depth":      1.3,  # scroll depth heatmaps
-        "heading_hierarchy":  1.2,  # section anchors
-        "conversion_intent":  1.2,  # CTA click zones
-        "schema_markup":      0.4,
-        "keyword_placement":  0.6,
-        "meta_description":   0.5,
     },
     "website_optimization": {
         "mobile_readiness":   1.4,  # Core Web Vitals
@@ -724,15 +692,6 @@ GOAL_WEIGHTS = {
         "conversion_intent":  1.2,
         "trust_resonance":    1.2,
         "content_depth":      1.1,
-    },
-    "website_surveys": {
-        "conversion_intent":  1.5,  # survey opt-in is a conversion
-        "trust_resonance":    1.4,  # trust encourages feedback
-        "readability":        1.3,  # clear survey prompts
-        "internal_links":     1.1,
-        "schema_markup":      0.5,
-        "keyword_placement":  0.5,
-        "content_depth":      0.8,
     },
 }
 
@@ -940,13 +899,21 @@ def score_search_intent(sig: dict, goal: str) -> int:
     combined = page_text + " " + h1 + " " + body
 
     # Goal-specific intent keywords
+    # Intent keywords aligned to the 13 active goals
     intent_keywords = {
-        "lead_generation": ["free", "download", "guide", "ebook", "checklist", "template", "webinar", "form", "subscribe", "contact"],
-        "saas_trial":      ["free trial", "sign up", "get started", "no credit card", "14 day", "30 day", "demo", "software", "platform", "dashboard"],
-        "ecommerce":       ["buy", "shop", "price", "cart", "checkout", "shipping", "order", "product", "discount", "sale"],
-        "newsletter":      ["subscribe", "newsletter", "weekly", "updates", "join", "community", "inbox", "tips", "insights"],
-        "book_demo":       ["demo", "schedule", "calendar", "meeting", "call", "book", "talk to", "sales", "expert", "consultation"],
-        "app_download":    ["download", "app store", "google play", "install", "ios", "android", "mobile app", "get the app"],
+        "cro":                       ["get started","sign up","try","buy","convert","optimize","cta","offer"],
+        "landing_page_optimization": ["get started","try free","download","claim","sign up","access","offer"],
+        "ab_testing":                ["test","experiment","variant","hypothesis","optimize","improve"],
+        "multivariate_testing":      ["test","headline","button","variation","experiment","combination"],
+        "cart_abandonment":          ["cart","buy","checkout","order","purchase","payment","price"],
+        "customer_engagement":       ["community","comment","share","follow","join","interact","discuss"],
+        "cx_optimization":           ["support","easy","fast","simple","seamless","help","experience"],
+        "customer_retention":        ["account","member","loyalty","reward","renew","subscription","stay"],
+        "feature_rollout":           ["new","update","launch","introducing","available","feature","release"],
+        "grow_traffic":              ["read","blog","guide","learn","seo","search","traffic","discover"],
+        "website_optimization":      ["fast","speed","performance","mobile","optimized","core","vitals"],
+        "personalization":           ["for you","recommended","tailored","custom","personal","based on"],
+        "website_redesign":          ["new","redesign","updated","modern","improved","fresh","relaunch"],
     }
     keywords = intent_keywords.get(goal, [])
     if not keywords:
@@ -975,18 +942,21 @@ def score_conversion_intent(sig: dict, goal: str) -> int:
     matched_text = sum(1 for kw in strong_kws if kw in sig["page_text"])
     score += min(15, matched_text * 3)
 
+    # Goal-specific keyword bonuses — only for the 13 active goals
     goal_signals = {
-        "cart_abandonment":  ["cart","checkout","add to cart","buy","order","payment","abandon"],
-        "cro":               ["get started","sign up","try","buy","convert","cta","optimize"],
-        "grow_traffic":      ["read","blog","article","guide","learn","seo","search","traffic"],
+        "cart_abandonment":          ["cart","checkout","add to cart","buy","order","payment","abandon"],
+        "cro":                       ["get started","sign up","try","buy","convert","optimize"],
+        "grow_traffic":              ["read","blog","article","guide","learn","seo","search","traffic"],
         "landing_page_optimization": ["get started","sign up","try free","download","claim","access"],
-        "mobile_ab_testing": ["app","download","install","mobile","ios","android"],
-        "customer_retention":["login","account","member","loyalty","reward","renew","subscription"],
-        "form_analytics":    ["form","submit","name","email","phone","contact","request"],
-        "heatmaps":          ["click","scroll","view","watch","explore","discover"],
-        "personalization":   ["for you","recommended","tailored","custom","based on","personal"],
-        "push_notifications":["subscribe","notify","allow","enable","opt in","permission"],
-        "website_surveys":   ["feedback","survey","rate","review","opinion","tell us","nps"],
+        "customer_retention":        ["login","account","member","loyalty","reward","renew","subscription"],
+        "personalization":           ["for you","recommended","tailored","custom","based on","personal"],
+        "customer_engagement":       ["comment","share","community","join","follow","interact"],
+        "feature_rollout":           ["new","update","launch","introducing","now available","feature"],
+        "ab_testing":                ["test","variant","control","hypothesis","experiment","cta"],
+        "multivariate_testing":      ["test","headline","image","button","variation","combination"],
+        "website_redesign":          ["new look","redesign","updated","fresh","modern","improved"],
+        "cx_optimization":           ["support","help","easy","simple","fast","seamless","friction"],
+        "website_optimization":      ["fast","speed","performance","mobile","optimized","efficient"],
     }
     if goal in goal_signals and any(w in sig["page_text"] for w in goal_signals[goal]):
         score += 15
@@ -1073,21 +1043,12 @@ async def analyze_site(request: Request, body: AuditRequest):
 
     # ── Scrape + PageSpeed concurrently ────────────────────────────────────
     loop = asyncio.get_event_loop()
-    html, page_speed = await asyncio.gather(
+    scrape_result, page_speed = await asyncio.gather(
         loop.run_in_executor(None, scrape_page, url),
         loop.run_in_executor(None, get_pagespeed_score, url),
     )
-
-    # Fallback signals if scrape fails
-    EMPTY_SIG = {
-        "h1": "Restricted Access", "h2s": [], "h3s": [], "title": "",
-        "meta_description": "", "body_copy": "", "cta_texts": [],
-        "img_count": 0, "alt_texts": [], "has_form": False,
-        "input_types": [], "nav_links": [], "total_links": 0,
-        "has_schema": False, "has_viewport": False,
-        "viewport_content": "", "page_text": "",
-    }
-    sig = extract_signals(html) if html else EMPTY_SIG
+    jina_data, raw_html = scrape_result
+    sig = extract_signals(jina_data, raw_html)
 
     scores: dict = {
         # Core gauges
@@ -1153,14 +1114,48 @@ async def analyze_site(request: Request, body: AuditRequest):
                 f"Be specific to this site and its {goal_label} goal. No generic advice."
             )
 
-            completion = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                temperature=0,
-            )
-            ai_res = json.loads(completion.choices[0].message.content)
-            yield json.dumps({"type": "ai_narrative", **ai_res}) + "\n"
+            def run_groq(prompt_text: str) -> dict:
+                """Run Groq call and return parsed JSON. Raises on failure."""
+                completion = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",  # free on Groq, much better quality
+                    messages=[{"role": "user", "content": prompt_text}],
+                    response_format={"type": "json_object"},
+                    temperature=0,
+                    max_tokens=1500,
+                )
+                raw = completion.choices[0].message.content
+                # Strip markdown code fences if model wraps output
+                raw = re.sub(r"^```json\s*|```\s*$", "", raw.strip(), flags=re.MULTILINE)
+                return json.loads(raw)
+
+            # Attempt 1 — full prompt
+            ai_res = None
+            try:
+                ai_res = run_groq(prompt)
+            except (json.JSONDecodeError, Exception) as e:
+                print(f"[Groq attempt 1 failed] {e}")
+
+            # Attempt 2 — stricter minimal prompt if first attempt fails
+            if not ai_res or not isinstance(ai_res, dict):
+                strict_prompt = (
+                    f"You are a CRO analyst. Return ONLY valid JSON, no other text.\n"
+                    f"Analyze: {clean(url)} (Goal: {goal_label})\n"
+                    f"Page title: {clean(sig['title']) or 'unknown'}\n"
+                    f"H1: {clean(sig['h1'])}\n\n"
+                    "Return JSON with exactly these keys (no extras):\n"
+                    '{"swot":{"strengths":[{"point":"","evidence":""}],"weaknesses":[{"point":"","fix_suggestion":""}],"opportunities":[{"point":"","potential_impact":""}],"threats":[{"point":"","mitigation_strategy":""}]},"roadmap":[{"task":"","tech_reason":"","psych_impact":"","success_metric":""}],"final_verdict":{"overall_readiness":"","single_most_impactful_change":""}}'
+                )
+                try:
+                    ai_res = run_groq(strict_prompt)
+                    print("[Groq attempt 2 succeeded]")
+                except Exception as e2:
+                    print(f"[Groq attempt 2 failed] {e2}")
+                    ai_res = None
+
+            if ai_res:
+                yield json.dumps({"type": "ai_narrative", **ai_res}) + "\n"
+            else:
+                yield json.dumps({"type": "error", "msg": "AI analysis failed. Metrics are still available."}) + "\n"
 
         except Exception as e:
             # Never leak internal error details to the client (OWASP: A09)
