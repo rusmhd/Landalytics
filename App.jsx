@@ -673,11 +673,34 @@ const TermsPage = ({ onHome }) => (
 
 export default function App() {
   const [report, setReport] = useState(null);
-  const [page, setPage] = useState('home'); // 'home' | 'privacy' | 'terms'
 
-  if (page === 'privacy') return <PrivacyPage onHome={() => { setPage('home'); setReport(null); }} />;
-  if (page === 'terms')   return <TermsPage   onHome={() => { setPage('home'); setReport(null); }} />;
+  // Read URL path on load — supports direct links to /privacy and /terms
+  const getInitialPage = () => {
+    const path = window.location.pathname;
+    if (path === '/privacy') return 'privacy';
+    if (path === '/terms')   return 'terms';
+    return 'home';
+  };
+  const [page, setPage] = useState(getInitialPage);
+
+  // Update browser URL when page changes
+  const navigate = (pg) => {
+    const path = pg === 'home' ? '/' : `/${pg}`;
+    window.history.pushState({}, '', path);
+    setPage(pg);
+    window.scrollTo(0, 0);
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onPop = () => setPage(getInitialPage());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  if (page === 'privacy') return <PrivacyPage onHome={() => navigate('home')} />;
+  if (page === 'terms')   return <TermsPage   onHome={() => navigate('home')} />;
   return report
-    ? <ReportPage {...report} onHome={() => setReport(null)} onNav={setPage} />
-    : <HomePage onScanComplete={setReport} onNav={setPage} />;
+    ? <ReportPage {...report} onHome={() => { navigate('home'); setReport(null); }} onNav={navigate} />
+    : <HomePage onScanComplete={setReport} onNav={navigate} />;
 }
