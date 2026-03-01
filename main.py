@@ -444,7 +444,7 @@ def _signals_from_html(html: str) -> dict:
     meta_d  = soup.find("meta", attrs={"name": "description"})
     meta    = meta_d.get("content", "")[:200] if meta_d else ""
     paras   = [p.get_text(strip=True) for p in soup.find_all("p") if len(p.get_text(strip=True)) > 40][:5]
-    body    = " | ".join(paras)[:600]
+    body    = " | ".join(paras)[:2000]
     buttons = soup.find_all(["button", "a"])
     ctas    = list({b.get_text(strip=True) for b in buttons if 2 < len(b.get_text(strip=True)) < 40})[:8]
     imgs    = soup.find_all("img")
@@ -516,7 +516,7 @@ def extract_signals(jina_data: dict, html: str = "") -> dict:
         if l.strip() and not l.startswith("#") and not l.startswith("[")
         and not l.startswith("!") and len(l.strip()) > 40
     ][:5]
-    body_copy = " | ".join(body_lines)[:600]
+    body_copy = " | ".join(body_lines)[:2000]
 
     # ── Links — Jina JSON returns a links array ───────────────────────────────
     links_arr   = jina_data.get("links") or []
@@ -1086,7 +1086,7 @@ async def analyze_site(request: Request, body: AuditRequest):
             # (belt-and-suspenders: Groq already treats content as data, not code,
             #  but we strip control characters to be safe)
             def clean(s: str) -> str:
-                return re.sub(r'[\x00-\x1f\x7f]', '', str(s))[:500]
+                return re.sub(r'[\x00-\x1f\x7f]', '', str(s))[:3000]
 
             prompt = (
                 f"You are a senior CRO expert. Analyze this landing page for the goal: {goal_label}.\n"
@@ -1096,7 +1096,8 @@ async def analyze_site(request: Request, body: AuditRequest):
                 f"H1: {clean(sig['h1'])}\n"
                 f"H2s: {clean(', '.join(sig['h2s'])) or 'None'}\n"
                 f"Meta Description: {clean(sig['meta_description']) or 'None'}\n"
-                f"Body Copy: {clean(sig['body_copy'][:1500]) or 'N/A'}\n"
+                f"Body Copy: {clean(sig['body_copy'])} \n"
+                f"Full Page Content: {clean(sig['page_text'][:4000])}\n"
                 f"CTAs: {clean(', '.join(sig['cta_texts'])) or 'None'}\n"
                 f"Nav Links: {clean(', '.join(sig['nav_links'])) or 'None'}\n"
                 f"Images: {sig['img_count']} (alt texts: {clean(', '.join(sig['alt_texts'][:3])) or 'missing'})\n"
@@ -1206,3 +1207,4 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
