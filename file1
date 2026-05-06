@@ -1,0 +1,420 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNqIP/fO2MxkqRwe+LO6xNS",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/rusmhd/Landalytics/blob/main/file1\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "NQzFZjmIEikW",
+        "outputId": "b0359e32-19bc-4b1c-a7cd-2da090b15b3a",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "n: 3\n",
+            "Sum of first 3 : 6\n"
+          ]
+        }
+      ],
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Calculate the sum of first n natural numbers.\n",
+        "n = int(input(\"n: \"))\n",
+        "total = sum(range(1, n + 1))\n",
+        "print(\"Sum of first\", n, \":\", total)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Print numbers from 1 to 20 but skip numbers divisible by 3.\n",
+        "for i in range(1, 21):\n",
+        "    if i % 3 == 0:\n",
+        "        continue\n",
+        "    print(i)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "7OuLEwuRfMg7",
+        "outputId": "a846aad0-2e9c-4479-f496-2257ce0e1986"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "1\n",
+            "2\n",
+            "4\n",
+            "5\n",
+            "7\n",
+            "8\n",
+            "10\n",
+            "11\n",
+            "13\n",
+            "14\n",
+            "16\n",
+            "17\n",
+            "19\n",
+            "20\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Count how many numbers in [3, 7, 12, 18, 5, 20] are greater than 10.\n",
+        "lst = [3, 7, 12, 18, 5, 20]\n",
+        "count = 0\n",
+        "for x in lst:\n",
+        "    if x > 10:\n",
+        "        count += 1\n",
+        "\n",
+        "print(\"Count > 10:\", count)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wDuuBng4fUze",
+        "outputId": "22d14763-1429-4c7e-9ed2-6945049db574"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Count > 10: 3\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Write a Python program using if–elif–else ladder to assign grades: ≥ 80: A Grade 60–79: B Grade 50–59: C Grade < 50: Fail\n",
+        "marks = int(input(\"Marks: \"))\n",
+        "if marks >= 80:\n",
+        "    print(\"Grade: A\")\n",
+        "elif marks >= 60:\n",
+        "    print(\"Grade: B\")\n",
+        "elif marks >= 50:\n",
+        "    print(\"Grade: C\")\n",
+        "else:\n",
+        "    print(\"Result: Fail\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "JeJrkyBmfWES",
+        "outputId": "e4caa345-34b3-4f84-9fec-644fce6d4f8a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Marks: 89\n",
+            "Grade: A\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed 12508033\n",
+        "#Write a function square_num(x)mthat returns the square of a number.\n",
+        "def square_num(x):\n",
+        "    return x ** 2\n",
+        "\n",
+        "print(square_num(5))\n",
+        "print(square_num(9))\n",
+        "print(square_num(12))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "IqwlbTx7fV7s",
+        "outputId": "a981db2d-8d90-4f9b-eba4-7d988aae7bee"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "25\n",
+            "81\n",
+            "144\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Write a function that calculates the average of numbers in a list.Example list: [12, 18, 25, 30]\n",
+        "def calculate_average(lst):\n",
+        "    return sum(lst) / len(lst)\n",
+        "\n",
+        "numbers = [12, 18, 25, 30]\n",
+        "avg = calculate_average(numbers)\n",
+        "\n",
+        "print(\"Average:\", avg)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "PgpPqscdfVwX",
+        "outputId": "6634d42c-fa4a-4a6b-aa6f-fd866a0142f0"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Average: 21.25\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Create the array [2, 4, 6, 8, 10] and: Multiply each element by 2 Find the maximum value\n",
+        "import numpy as np\n",
+        "arr = np.array([2, 4, 6, 8, 10])\n",
+        "print(\"Original:\", arr)\n",
+        "print(\"x2:      \", arr * 2)\n",
+        "print(\"Maximum: \", np.max(arr))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "IJWDYGq0fVfG",
+        "outputId": "13e7fcb3-56c8-491d-e94c-96b558b8f05b"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Original: [ 2  4  6  8 10]\n",
+            "x2:       [ 4  8 12 16 20]\n",
+            "Maximum:  10\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Load the flights dataset and perform the following:Display the first 5 rows Display the last 5 rows Display the shape of the dataset\n",
+        "import seaborn as sns\n",
+        "df = sns.load_dataset('flights')\n",
+        "print(df.head())\n",
+        "print(df.tail())\n",
+        "print(\"Shape:\", df.shape)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "0mAgAAQwgfZf",
+        "outputId": "99c8125c-17e4-4b72-92c7-27d56f76cce9"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "   year month  passengers\n",
+            "0  1949   Jan         112\n",
+            "1  1949   Feb         118\n",
+            "2  1949   Mar         132\n",
+            "3  1949   Apr         129\n",
+            "4  1949   May         121\n",
+            "     year month  passengers\n",
+            "139  1960   Aug         606\n",
+            "140  1960   Sep         508\n",
+            "141  1960   Oct         461\n",
+            "142  1960   Nov         390\n",
+            "143  1960   Dec         432\n",
+            "Shape: (144, 3)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Using the flights dataset: Display records where year = 1955Display records where month = 'January' Display records where passengers > 400\n",
+        "import seaborn as sns\n",
+        "df = sns.load_dataset('flights')\n",
+        "print(df[df['year'] == 1955])\n",
+        "print(df[df['month'] == 'January'])\n",
+        "print(df[df['passengers'] > 400])"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "_sKeii91gfSZ",
+        "outputId": "417a6b51-ceb4-43db-f2e7-8aa8a8b882c8"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "    year month  passengers\n",
+            "72  1955   Jan         242\n",
+            "73  1955   Feb         233\n",
+            "74  1955   Mar         267\n",
+            "75  1955   Apr         269\n",
+            "76  1955   May         270\n",
+            "77  1955   Jun         315\n",
+            "78  1955   Jul         364\n",
+            "79  1955   Aug         347\n",
+            "80  1955   Sep         312\n",
+            "81  1955   Oct         274\n",
+            "82  1955   Nov         237\n",
+            "83  1955   Dec         278\n",
+            "Empty DataFrame\n",
+            "Columns: [year, month, passengers]\n",
+            "Index: []\n",
+            "     year month  passengers\n",
+            "90   1956   Jul         413\n",
+            "91   1956   Aug         405\n",
+            "101  1957   Jun         422\n",
+            "102  1957   Jul         465\n",
+            "103  1957   Aug         467\n",
+            "104  1957   Sep         404\n",
+            "113  1958   Jun         435\n",
+            "114  1958   Jul         491\n",
+            "115  1958   Aug         505\n",
+            "116  1958   Sep         404\n",
+            "122  1959   Mar         406\n",
+            "124  1959   May         420\n",
+            "125  1959   Jun         472\n",
+            "126  1959   Jul         548\n",
+            "127  1959   Aug         559\n",
+            "128  1959   Sep         463\n",
+            "129  1959   Oct         407\n",
+            "131  1959   Dec         405\n",
+            "132  1960   Jan         417\n",
+            "134  1960   Mar         419\n",
+            "135  1960   Apr         461\n",
+            "136  1960   May         472\n",
+            "137  1960   Jun         535\n",
+            "138  1960   Jul         622\n",
+            "139  1960   Aug         606\n",
+            "140  1960   Sep         508\n",
+            "141  1960   Oct         461\n",
+            "143  1960   Dec         432\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Using the flights dataset:Find the total passengers in 195 Find the average passengers for each year Find the maximum passengers in the dataset\n",
+        "import seaborn as sns\n",
+        "df = sns.load_dataset('flights')\n",
+        "mask  = df['year'] == 1950\n",
+        "total = df[mask]['passengers'].sum()\n",
+        "print(\"Total (1950):\", total)\n",
+        "g   = df.groupby('year')\n",
+        "avg = g['passengers'].mean()\n",
+        "print(\"Avg per year:\", avg)\n",
+        "print(\"Max:\", df['passengers'].max())"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "EITqUtlfgfDw",
+        "outputId": "5a814183-a364-446b-aa59-20da7bf174c4"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Total (1950): 1676\n",
+            "Avg per year: year\n",
+            "1949    126.666667\n",
+            "1950    139.666667\n",
+            "1951    170.166667\n",
+            "1952    197.000000\n",
+            "1953    225.000000\n",
+            "1954    238.916667\n",
+            "1955    284.000000\n",
+            "1956    328.250000\n",
+            "1957    368.416667\n",
+            "1958    381.000000\n",
+            "1959    428.333333\n",
+            "1960    476.166667\n",
+            "Name: passengers, dtype: float64\n",
+            "Max: 622\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
