@@ -1,0 +1,467 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPoMZLQ5msvijizbt6DVYju",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/rusmhd/Landalytics/blob/main/file4\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "I8TlbPseitcM",
+        "outputId": "ab87e81e-9269-4171-9727-b5fde105978f"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "1 \t\n",
+            "2 \t\n",
+            "3 \t\n",
+            "4 \t\n",
+            "5 \t\n",
+            "6 \t\n",
+            "7 \t\n",
+            "8 \t\n",
+            "9 \t\n",
+            "10 \t\n"
+          ]
+        }
+      ],
+      "source": [
+        "#numbers from 1 - 10\n",
+        "for i in range(1,11):\n",
+        "  print(i)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#check whether number odd or even\n",
+        "n=int(input(\"enter number\"))\n",
+        "if n %2==0:\n",
+        "  print(n,\"is even\")\n",
+        "else:\n",
+        "  print(n,\"is odd\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "jm5QmKEaizDT",
+        "outputId": "08824a3d-a540-4843-d3d5-445264fcec74"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "enter number2\n",
+            "2 is even\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#print elements in list\n",
+        "l=[5,10,15,20]\n",
+        "for i in l:\n",
+        "  print(i)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "xZlyjB7aj4gV",
+        "outputId": "3e618c01-cc25-447e-c970-db820ae05502"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "5\n",
+            "10\n",
+            "15\n",
+            "20\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#factorial\n",
+        "n=int(input(\"enter numebr\"))\n",
+        "f=1\n",
+        "for i in range(1,n+1):\n",
+        "  f*=id\n",
+        "print(\"factorail\",f)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "D49UzXpJlM5B",
+        "outputId": "bf1c1b9e-2d72-40a6-f5ed-48acde027e8f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "enter numebr5\n",
+            "factorail 120\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#loop 10 -1\n",
+        "for i in range(10,0,-1):\n",
+        "  print(i)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Ov7wjKvOmW5_",
+        "outputId": "540918c8-024d-407c-a2dc-315cc4c5ae1a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "10\n",
+            "9\n",
+            "8\n",
+            "7\n",
+            "6\n",
+            "5\n",
+            "4\n",
+            "3\n",
+            "2\n",
+            "1\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "l=[8,15,3,22,9]\n",
+        "print(\"max=\",max(l))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "2yUNC_WlnBq9",
+        "outputId": "52cf406c-0ab5-4a1d-9c61-eae680bbf7a7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "max= 22\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#largest among three using nexted\\\n",
+        "a=int(input(\"enter number\"))\n",
+        "b=int(input(\"enter number4\"))\n",
+        "c=int(input(\"enter number\"))\n",
+        "if a>b:\n",
+        "  if a>c:\n",
+        "    print(a,\"is largest\")\n",
+        "  else:\n",
+        "    print(c,\"is largest\")\n",
+        "else:\n",
+        "  if b>c:\n",
+        "    print(b,\"is largest\")\n",
+        "  else:\n",
+        "    print(c,\"is largest\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "nYD7TJZBonEb",
+        "outputId": "7329e6a0-424f-4d8b-c7c2-c6623c1e83cd"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "enter number2\n",
+            "enter number4\n",
+            "enter number2\n",
+            "4 is largest\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#list sum and average\n",
+        "l=[10,20,30,40,50]\n",
+        "total=sum(l)\n",
+        "avg=total/len(l)\n",
+        "print(\"sum\",total)\n",
+        "print(\"average\", avg)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lUg4AG7Lo0uq",
+        "outputId": "ac478569-1e47-410a-d0da-2d26c51ae302"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "sum 150\n",
+            "average 30.0\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#mean and sum of 1 to 10\n",
+        "import numpy as np\n",
+        "arr= np. arange(1,11)\n",
+        "print(\"array:\",arr)\n",
+        "\n",
+        "print(\"mean:\",np.mean(arr))\n",
+        "print(\"Sum:\",np.sum(arr))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "k1-nRJy6qvl8",
+        "outputId": "45decf30-6288-4ddd-9b38-34b92f3cd86c"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "array: [ 1  2  3  4  5  6  7  8  9 10]\n",
+            "mean: 5.5\n",
+            "Sum: 55\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#iris datset and display first 5 rows , disaply column anmes, shape of the datset\n",
+        "import seaborn as sns\n",
+        "df=sns.load_dataset(\"iris\")\n",
+        "print(df.head())\n",
+        "print(df.columns.tolist())\n",
+        "print(\"shape\",df.shape)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ns7JNuvzsd3u",
+        "outputId": "c6d6ddb8-26bf-4b33-9c8e-2b6a28129ef6"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "   sepal_length  sepal_width  petal_length  petal_width species\n",
+            "0           5.1          3.5           1.4          0.2  setosa\n",
+            "1           4.9          3.0           1.4          0.2  setosa\n",
+            "2           4.7          3.2           1.3          0.2  setosa\n",
+            "3           4.6          3.1           1.5          0.2  setosa\n",
+            "4           5.0          3.6           1.4          0.2  setosa\n",
+            "['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species']\n",
+            "shape (150, 5)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#using the iris dataset find tje averahe serpal lenght find the the maximum petal lenght find the minimum sepal width\n",
+        "import seaborn as snsw\n",
+        "df=sns.load_dataset(\"iris\")\n",
+        "print(\"Avg sepal_length:\",df['sepal_length'].mean())\n",
+        "print(\"Max petal_length:\",df['petal_length'].max())\n",
+        "print(\"Min sepal_width:\",df['sepal_width'].min())\n",
+        "\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ugf7PWax6E2F",
+        "outputId": "42cccb2d-ba7f-44ab-82a7-59d8ce4c6465"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Avg sepal_length: 5.843333333333334\n",
+            "Max petal_length: 6.9\n",
+            "Min sepal_width: 2.0\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#RushiL Mohamed\n",
+        "#Write a Python program using if–elif–else ladder to assign grades: ≥ 80: A Grade, 60–79: B Grade, 50–59: C Grade, < 50: Fail\n",
+        "mark = int(input(\"Marks:\"))\n",
+        "\n",
+        "if marks >= 80:\n",
+        "    print(\"A\")\n",
+        "elif marks >= 60:\n",
+        "    print(\"B\")\n",
+        "elif marks >= 50:\n",
+        "    print(\"C\")\n",
+        "else:\n",
+        "    print(\"Fail\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "4-qgfyuh-AtC",
+        "outputId": "ba7ff70e-1b39-4280-eee3-d6b98f799e97"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Marks:87\n",
+            "A\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Write Python programs for the following: Calculate the sum of first n natural numbers.\n",
+        "n=int(input(\"n:\"))\n",
+        "total= sum(range(1, n+1))\n",
+        "print(\"sum of first\",n, \":\",total)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "AEDW7SzB-Mh1",
+        "outputId": "665c85c2-1bda-4622-c230-9ca230fd2dea"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "n:5\n",
+            "sum of first 5 : 15\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Rushil Mohamed\n",
+        "#Write Python programs for the following:  Count how many numbers in [3, 7, 12, 18, 5, 20] aregreater than 10.\n",
+        "ls=[7,12,18,5,20]\n",
+        "c=0\n",
+        "for i in ls:\n",
+        "  if i>10:\n",
+        "    c+=1\n",
+        "print(\"Count > 10:\",c)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "WupVPCaG-ixi",
+        "outputId": "a69191b0-7add-41a0-b6b6-758bab19dff3"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Count > 10: 3\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
